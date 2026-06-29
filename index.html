@@ -172,7 +172,7 @@
 <header>
   <h1>World Cup 2026 Live ELO Decision-Tree Bracket</h1>
   <div class="subhead">
-    <span class="pill"><span class="dot"></span><span id="dataStatus">Loading live data…</span></span>
+    <span class="pill"><span class="dot" id="liveDot"></span><span id="liveLabel">Loading…</span></span>
     <span class="pill">Auto-refresh: every 2 hours</span>
     <span class="pill" title="When live data was last successfully retrieved">Last updated: <span id="lastUpdated">—</span></span>
     <span class="pill">ELO predictions recompute after each result</span>
@@ -243,6 +243,8 @@
       <div id="finals" class="finals-wrap" aria-live="polite"></div>
     </div>
   </section>
+
+  <p class="source-note" id="statusNote" style="margin-top:20px;"></p>
 </main>
 <script>
 (() => {
@@ -655,9 +657,9 @@
 
   async function loadData() {
     resetMatches();
-    const statusEl = document.getElementById("dataStatus");
+    const liveLabel = document.getElementById("liveLabel");
     try {
-      statusEl.textContent = "Refreshing live data…";
+      if (liveLabel) liveLabel.textContent = "Refreshing…";
       const { data, label } = await fetchScoreboardData();
       (data.events || []).forEach(ingestESPNEvent);
       lastUpdated = new Date();
@@ -672,8 +674,12 @@
 
   function render(message, isError=false) {
     lastRender = { message, isError };
-    const statusEl = document.getElementById("dataStatus");
-    statusEl.innerHTML = `<span class="${isError ? "error" : ""}">${escapeHtml(message)}</span>`;
+    const note = document.getElementById("statusNote");
+    if (note) note.innerHTML = `<span class="${isError ? "error" : ""}">${escapeHtml(message)}</span>`;
+    const liveLabel = document.getElementById("liveLabel");
+    if (liveLabel) liveLabel.textContent = isError ? "Live data offline" : "Live";
+    const liveDot = document.getElementById("liveDot");
+    if (liveDot) liveDot.style.background = isError ? "var(--warn)" : "var(--accent)";
     document.getElementById("tzLabel").textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || "browser timezone";
     const updEl = document.getElementById("lastUpdated");
     if (updEl) {
