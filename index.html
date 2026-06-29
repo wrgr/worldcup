@@ -88,9 +88,13 @@
     .bracket { display: flex; align-items: stretch; gap: 8px; padding: 4px; position: relative; z-index: 1; }
     .bcol { display: flex; flex-direction: column; min-width: 132px; }
     .bcol > h4 { text-align: center; margin: 0 0 8px; font-size: 11px; }
-    .bcol-body { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 6px; min-height: 470px; }
+    .bcol-body { flex: 1; display: flex; flex-direction: column; min-height: 560px; }
+    .bcol-body.split { gap: 34px; }
+    .bcol-body.split .quad { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 6px; }
+    .bcol-body.solo { justify-content: center; }
     .bcol.center { min-width: 150px; justify-content: center; }
     .bcol.center .center-body { justify-content: center; gap: 14px; min-height: 0; }
+    .when { font-size: 9.5px; color: var(--faint); margin-bottom: 4px; white-space: nowrap; padding-right: 12px; }
     .bcol.center .game { background: linear-gradient(180deg, rgba(85,214,190,.10), rgba(255,255,255,.03)); }
     .third { margin-top: 6px; }
     .third h4 { text-align: center; margin: 8px 0 6px; color: var(--faint); }
@@ -876,27 +880,41 @@
     }).join("");
   }
 
-  function bracketColumn(title, ids, extra="") {
-    return `<div class="bcol ${extra}"><h4>${escapeHtml(title)}</h4>` +
-      `<div class="bcol-body">${ids.map(id => renderGame(byId.get(id))).join("")}</div></div>`;
+  const renderG = (id) => renderGame(byId.get(id));
+
+  // A round column split into a top quadrant and a bottom quadrant with a central gap between them.
+  function quadColumn(title, ids) {
+    const half = ids.length / 2;
+    const top = ids.slice(0, half), bottom = ids.slice(half);
+    return `<div class="bcol"><h4>${escapeHtml(title)}</h4>` +
+      `<div class="bcol-body split">` +
+        `<div class="quad">${top.map(renderG).join("")}</div>` +
+        `<div class="quad">${bottom.map(renderG).join("")}</div>` +
+      `</div></div>`;
+  }
+
+  // A single-card column (semifinal) centered in the gap between the quadrants.
+  function soloColumn(title, id) {
+    return `<div class="bcol"><h4>${escapeHtml(title)}</h4>` +
+      `<div class="bcol-body solo">${renderG(id)}</div></div>`;
   }
 
   function renderBracket() {
     const L = bracketLayout;
     const center = `<div class="bcol center"><h4>Final</h4><div class="bcol-body center-body">` +
-      `${renderGame(byId.get(L.final))}` +
-      `<div class="third"><h4>Third place</h4>${renderGame(byId.get(L.third))}</div>` +
+      `${renderG(L.final)}` +
+      `<div class="third"><h4>Third place</h4>${renderG(L.third)}</div>` +
       `</div></div>`;
     document.getElementById("bracket").innerHTML =
-      bracketColumn("Round of 32", L.leftR32) +
-      bracketColumn("Round of 16", L.leftR16) +
-      bracketColumn("Quarterfinal", L.leftQF) +
-      bracketColumn("Semifinal", L.leftSF) +
+      quadColumn("Round of 32", L.leftR32) +
+      quadColumn("Round of 16", L.leftR16) +
+      quadColumn("Quarterfinal", L.leftQF) +
+      soloColumn("Semifinal", L.leftSF[0]) +
       center +
-      bracketColumn("Semifinal", L.rightSF) +
-      bracketColumn("Quarterfinal", L.rightQF) +
-      bracketColumn("Round of 16", L.rightR16) +
-      bracketColumn("Round of 32", L.rightR32);
+      soloColumn("Semifinal", L.rightSF[0]) +
+      quadColumn("Quarterfinal", L.rightQF) +
+      quadColumn("Round of 16", L.rightR16) +
+      quadColumn("Round of 32", L.rightR32);
   }
 
   function championRunProbability(championName) {
@@ -957,6 +975,7 @@
       : "";
     return `<article class="game ${cardClass}" data-match-id="${escapeAttr(m.id)}">
       <span class="chev">ⓘ</span>
+      <div class="when">${escapeHtml(formatDate(m.kickoff, {compact:true}))}</div>
       ${teamsHtml}
       ${proj}
     </article>`;
