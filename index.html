@@ -101,7 +101,10 @@
     }
     .game .detail { display: none; }
     .game.expanded .detail { display: block; }
-    .game .chev { color: var(--faint); font-size: 11px; }
+    .game .chev { position: absolute; top: 4px; right: 6px; color: var(--faint); font-size: 10px; opacity: .6; }
+    .proj { margin-top: 4px; font-size: 10.5px; color: var(--pred); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .proj.pick { color: var(--accent); }
+    .proj.implied { color: var(--pred); opacity: .85; }
     .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 18px; background: rgba(3,7,18,.66); backdrop-filter: blur(3px); }
     .modal.hidden { display: none; }
     .modal-card { position: relative; width: min(460px, 100%); max-height: 86vh; overflow-y: auto; background: var(--panel2); border: 1px solid rgba(255,255,255,.14); border-radius: var(--radius); box-shadow: 0 30px 80px rgba(0,0,0,.5); padding: 18px; }
@@ -934,8 +937,6 @@
     const teams = m.slots.map(resolveProjectedSlot);
     const isFinal = m.state === "post";
     const isLive = m.state === "in";
-    const statusClass = isLive ? "live" : isFinal ? "final" : "";
-    const statusText = isLive ? "LIVE" : isFinal ? "FINAL" : "SCHEDULED";
     const cardClass = isLive ? "live-game" : isFinal ? "final-game" : m.userPicked ? "user-game" : m.implied ? "implied-game" : m.prediction ? "projected-game" : "";
     const score = idx => m.scores?.[idx] !== null && m.scores?.[idx] !== undefined ? m.scores[idx] : "";
     const teamsHtml = [0,1].map(i => {
@@ -950,11 +951,14 @@
       const pickAttrs = pickable ? ` data-pickable="1" data-match-id="${escapeAttr(m.id)}" data-team-name="${escapeAttr(teams[i]?.name || "")}"` : "";
       return `<div class="${cls}"${pickAttrs}><span class="name">${escapeHtml(teams[i]?.name || "TBD")}</span><span class="score">${escapeHtml(score(i))}</span></div>`;
     }).join("");
-    const tag = m.userPicked ? `<span class="small pred-label">pick</span>` : m.implied ? `<span class="small">implied</span>` : "";
+    const projClass = m.userPicked ? "proj pick" : m.implied ? "proj implied" : "proj";
+    const proj = (m.winnerIndex === undefined && m.prediction)
+      ? `<div class="${projClass}">▸ ${escapeHtml(m.prediction.winner.name)} ${escapeHtml(pct(m.prediction.pWinner))}</div>`
+      : "";
     return `<article class="game ${cardClass}" data-match-id="${escapeAttr(m.id)}">
-      <div class="kicker"><span>${escapeHtml(formatDate(m.kickoff, {compact:true}))}</span><span class="chev">ⓘ</span></div>
+      <span class="chev">ⓘ</span>
       ${teamsHtml}
-      <div class="status"><span class="${statusClass}">${escapeHtml(statusText)}</span>${tag}</div>
+      ${proj}
     </article>`;
   }
 
