@@ -84,26 +84,15 @@
     .bracket-shell { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
     #bracketScale { transform-origin: top left; width: max-content; }
     .scroll-hint { display: none; color: var(--faint); font-size: 12px; padding: 0 16px 6px; }
-    .quarters {
-      display: grid; grid-template-columns: repeat(2, minmax(540px, 1fr)); gap: 16px; min-width: 1100px;
-    }
-    .quarter {
-      background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 14px;
-      position: relative;
-    }
-    .quarter-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-    .quarter-title strong { font-size: 15px; letter-spacing: -.01em; }
-    .tree {
-      display: grid; grid-template-columns: 1.22fr 1.02fr .96fr; gap: 14px; align-items: stretch; position: relative;
-    }
-    .tree-col { display: grid; gap: 10px; align-content: center; }
-    .tree-col.r32 { grid-template-rows: repeat(4, minmax(72px, auto)); }
-    .tree-col.r16 { grid-template-rows: repeat(2, minmax(92px, auto)); }
-    .tree-col.qf { grid-template-rows: minmax(110px, auto); }
-    .connector-note { color: var(--faint); font-size: 11px; margin-top: 8px; }
-    .finals-wrap { margin-top: 18px; display: grid; grid-template-columns: 1fr minmax(280px, 460px) 1fr; gap: 14px; min-width: 980px; }
-    .semi-col { display: grid; gap: 14px; align-content: center; }
-    .final-col { display: grid; gap: 14px; align-content: center; }
+    .bracket { display: flex; align-items: stretch; gap: 12px; padding: 4px; }
+    .bcol { display: flex; flex-direction: column; min-width: 186px; }
+    .bcol > h4 { text-align: center; margin: 0 0 8px; }
+    .bcol-body { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 8px; min-height: 540px; }
+    .bcol.center { min-width: 230px; justify-content: center; }
+    .bcol.center .center-body { justify-content: center; gap: 16px; min-height: 0; }
+    .bcol.center .game { background: linear-gradient(180deg, rgba(85,214,190,.10), rgba(255,255,255,.03)); }
+    .third { margin-top: 6px; }
+    .third h4 { text-align: center; margin: 8px 0 6px; color: var(--faint); }
     .game {
       border: 1px solid rgba(255,255,255,.10);
       background: linear-gradient(180deg, var(--card), var(--card2));
@@ -176,7 +165,7 @@
       .bracket-shell { overflow: visible; height: auto !important; }
       #bracketScale { transform: none !important; width: auto !important; }
       .game .detail { display: block !important; }
-      .quarters, .finals-wrap { min-width: 0; }
+      .bcol-body { min-height: 0; }
     }
   </style>
 </head>
@@ -257,8 +246,7 @@
     <div class="scroll-hint">← Scroll horizontally to see the full bracket →</div>
     <div class="bracket-shell">
       <div id="bracketScale">
-        <div id="quarters" class="quarters" aria-live="polite"></div>
-        <div id="finals" class="finals-wrap" aria-live="polite"></div>
+        <div id="bracket" class="bracket" aria-live="polite"></div>
       </div>
     </div>
   </section>
@@ -395,12 +383,19 @@
     { id:"53452537", key:"m104", round:"finals", kickoff:"2026-07-19T19:00:00Z", stage:"Final", slots:[from("53452533"), from("53452535")]}
   ];
 
-  const quarters = [
-    { title: "Quarter 1", subtitle: "Canada / Netherlands-Morocco / Germany-France side", r32:["53452545","53452547","53452541","53452543"], r16:["53452511","53452509"], qf:"53452525" },
-    { title: "Quarter 2", subtitle: "Portugal-Spain / USA-Belgium side", r32:["53452549","53452551","53452553","53452555"], r16:["53452513","53452515"], qf:"53452527" },
-    { title: "Quarter 3", subtitle: "Brazil-Japan / Mexico-England side", r32:["53452557","53452561","53452563","53452565"], r16:["53452517","53452519"], qf:"53452529" },
-    { title: "Quarter 4", subtitle: "Argentina-Colombia side", r32:["53452569","53452503","53452505","53452507"], r16:["53452521","53452523"], qf:"53452531" }
-  ];
+  // Columns ordered top-to-bottom so each match sits between the two it feeds from.
+  const bracketLayout = {
+    leftR32:  ["53452545","53452547","53452541","53452543","53452549","53452551","53452553","53452555"],
+    leftR16:  ["53452511","53452509","53452513","53452515"],
+    leftQF:   ["53452525","53452527"],
+    leftSF:   ["53452533"],
+    final:    "53452537",
+    third:    "53452539",
+    rightSF:  ["53452535"],
+    rightQF:  ["53452529","53452531"],
+    rightR16: ["53452517","53452519","53452521","53452523"],
+    rightR32: ["53452557","53452561","53452563","53452565","53452569","53452503","53452505","53452507"]
+  };
 
   let matches = [];
   let byId = new Map();
@@ -775,7 +770,7 @@
         ? `${lastUpdated.toLocaleString(undefined, selectedTZ ? { timeZone: selectedTZ } : {})}${lastUpdatedSource ? ` (${lastUpdatedSource})` : ""}`
         : "live fetch pending — showing snapshot";
     }
-    renderUpcoming(); renderQuarters(); renderFinals(); renderPathSummary();
+    renderUpcoming(); renderBracket(); renderPathSummary();
     fitBracket();
   }
 
@@ -824,24 +819,27 @@
     }).join("");
   }
 
-  function renderQuarters() {
-    document.getElementById("quarters").innerHTML = quarters.map(q => `
-      <div class="quarter">
-        <div class="quarter-title"><strong>${escapeHtml(q.title)}</strong><span class="small">${escapeHtml(q.subtitle)}</span></div>
-        <div class="tree">
-          <div class="tree-col r32"><h4>Round of 32</h4>${q.r32.map(id => renderGame(byId.get(id))).join("")}</div>
-          <div class="tree-col r16"><h4>Round of 16</h4>${q.r16.map(id => renderGame(byId.get(id))).join("")}</div>
-          <div class="tree-col qf"><h4>Quarterfinal</h4>${renderGame(byId.get(q.qf))}<div class="connector-note">Winner feeds the semifinal tree below.</div></div>
-        </div>
-      </div>`).join("");
+  function bracketColumn(title, ids, extra="") {
+    return `<div class="bcol ${extra}"><h4>${escapeHtml(title)}</h4>` +
+      `<div class="bcol-body">${ids.map(id => renderGame(byId.get(id))).join("")}</div></div>`;
   }
 
-  function renderFinals() {
-    const sf1 = byId.get("53452533"), sf2 = byId.get("53452535"), third = byId.get("53452539"), final = byId.get("53452537");
-    document.getElementById("finals").innerHTML = `
-      <div class="panel section-inner semi-col"><h3>Semifinal side A</h3>${renderGame(sf1)}</div>
-      <div class="panel section-inner final-col"><h3>Final / third place</h3>${renderGame(final)}${renderGame(third)}</div>
-      <div class="panel section-inner semi-col"><h3>Semifinal side B</h3>${renderGame(sf2)}</div>`;
+  function renderBracket() {
+    const L = bracketLayout;
+    const center = `<div class="bcol center"><h4>Final</h4><div class="bcol-body center-body">` +
+      `${renderGame(byId.get(L.final))}` +
+      `<div class="third"><h4>Third place</h4>${renderGame(byId.get(L.third))}</div>` +
+      `</div></div>`;
+    document.getElementById("bracket").innerHTML =
+      bracketColumn("Round of 32", L.leftR32) +
+      bracketColumn("Round of 16", L.leftR16) +
+      bracketColumn("Quarterfinal", L.leftQF) +
+      bracketColumn("Semifinal", L.leftSF) +
+      center +
+      bracketColumn("Semifinal", L.rightSF) +
+      bracketColumn("Quarterfinal", L.rightQF) +
+      bracketColumn("Round of 16", L.rightR16) +
+      bracketColumn("Round of 32", L.rightR32);
   }
 
   function championRunProbability(championName) {
