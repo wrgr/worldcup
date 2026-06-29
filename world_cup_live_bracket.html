@@ -77,7 +77,9 @@
     .match-title { display: flex; justify-content: space-between; gap: 10px; align-items: center; font-weight: 850; }
     .match-meta, .source-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
     .empty { color: var(--muted); padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
-    .bracket-shell { overflow-x: auto; padding: 16px; }
+    .bracket-shell { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
+    .scroll-hint { display: none; color: var(--faint); font-size: 12px; padding: 0 16px 4px; }
+    @media (max-width: 1050px) { .scroll-hint { display: block; } }
     .quarters {
       display: grid; grid-template-columns: repeat(2, minmax(690px, 1fr)); gap: 16px; min-width: 1420px;
     }
@@ -119,6 +121,16 @@
     .team .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .team.projected .name::after { content: "  projected"; color: var(--faint); font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; }
     .team .score { font-variant-numeric: tabular-nums; font-weight: 900; min-width: 24px; text-align: right; }
+    .team.user-picked { background: rgba(85,214,190,.24); color: #eafffb; font-weight: 900; box-shadow: 0 0 0 1px rgba(85,214,190,.55) inset; }
+    body.predict-on .game .team[data-pickable="1"] { cursor: pointer; }
+    body.predict-on .game .team[data-pickable="1"]:hover { background: rgba(255,255,255,.12); }
+    .game.user-game { border-color: rgba(85,214,190,.55); box-shadow: 0 0 0 1px rgba(85,214,190,.2) inset; }
+    .controls-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+    .controls-row.hidden { display: none; }
+    .slider-wrap { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+    .slider-wrap input[type=range] { accent-color: var(--accent); }
+    button.secondary { background: rgba(255,255,255,.08); color: var(--text); box-shadow: none; border: 1px solid rgba(255,255,255,.16); font-weight: 700; }
+    button.toggle-on { background: var(--pred); color: #160a2e; }
     .status { margin-top: 8px; color: var(--muted); font-size: 12px; display:flex; justify-content:space-between; gap:8px; align-items: center; }
     .live { color: var(--hot); font-weight: 900; }
     .final { color: var(--good); font-weight: 900; }
@@ -156,6 +168,17 @@
     <span class="pill">ELO predictions recompute after each result</span>
     <span class="pill">Times: <span id="tzLabel">browser timezone</span></span>
     <button id="refreshBtn" type="button">Refresh now</button>
+    <button id="predictBtn" type="button" class="secondary">Predict mode: off</button>
+  </div>
+  <div id="predictControls" class="controls-row hidden">
+    <span class="pill"><span id="pickCount">0</span> manual picks</span>
+    <button id="resetPicksBtn" type="button" class="secondary">Reset picks</button>
+    <span class="slider-wrap">
+      <label for="upsetSlider">Upset factor</label>
+      <input id="upsetSlider" type="range" min="0.6" max="2" step="0.1" value="1" />
+      <span id="upsetVal">1.0×</span>
+    </span>
+    <span class="small">Click a team to advance them. Higher upset factor flattens the ELO probabilities.</span>
   </div>
 </header>
 <main>
@@ -175,7 +198,7 @@
             <strong>Prediction layer:</strong> each unresolved match uses the embedded ELO table and the standard logistic transform <code>1/(1+10^(-ΔELO/400))</code>. It ignores injuries, rest, travel, home advantage, styles, and penalty-specific skill unless already reflected in the rating.
           </div>
           <p class="source-note">
-            <strong>Live layer:</strong> the GitHub version first reads <code>data/scoreboard.json</code>, which the included GitHub Action refreshes every two hours. If that file is missing or stale, the page tries ESPN's public World Cup scoreboard feed directly. If both fetches fail, it falls back to the embedded knockout snapshot. Official fixtures/results should be checked against FIFA's fixture page.
+            <strong>Live layer:</strong> the page first reads <code>scoreboard.json</code> committed to the repo root. If that file is missing or stale, it tries ESPN's public World Cup scoreboard feed directly in the browser. If both fetches fail, it falls back to the embedded knockout snapshot. Official fixtures/results should be checked against FIFA's fixture page.
           </p>
           <ul class="source-list source-note">
             <li><a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums" target="_blank" rel="noopener">FIFA official schedule / results</a></li>
@@ -194,6 +217,7 @@
   </div>
 
   <section style="margin-top:20px;">
+    <div class="scroll-hint">← Scroll horizontally to see the full bracket →</div>
     <div class="bracket-shell">
       <div id="quarters" class="quarters" aria-live="polite"></div>
       <div id="finals" class="finals-wrap" aria-live="polite"></div>
@@ -203,7 +227,7 @@
 <script>
 (() => {
   const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
-  const LOCAL_SCOREBOARD_URL = "data/scoreboard.json";
+  const LOCAL_SCOREBOARD_URL = "scoreboard.json";
   const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260628-20260719&limit=250";
   const CUTOFF = "2022-06-29";
 
@@ -322,6 +346,10 @@
 
   let matches = [];
   let byId = new Map();
+  let predictMode = false;
+  let eloScaleFactor = 1;            // multiplies the ELO logistic divisor (higher = more upsets)
+  const userPicks = new Map();       // matchId -> normalized chosen team name
+  let lastRender = { message: "Loading…", isError: false };
 
   function team(name, abbr) { return { type:"team", name, abbr }; }
   function from(matchId) { return { type:"winner", matchId }; }
@@ -401,23 +429,34 @@
   function eloProbability(teamA, teamB) {
     const ra = getRating(teamA), rb = getRating(teamB);
     if (!Number.isFinite(ra) || !Number.isFinite(rb)) return null;
-    const pA = 1 / (1 + Math.pow(10, -(ra - rb) / 400));
+    const pA = 1 / (1 + Math.pow(10, -(ra - rb) / (400 * eloScaleFactor)));
     return { pA, pB: 1 - pA, diff: ra - rb, ra, rb };
   }
 
   function computePredictions() {
     for (const m of matches) {
+      // Recompute projection fields for matches without an official result so picks/slider changes re-cascade.
+      if (m.winnerIndex === undefined) {
+        m.predictedWinnerIndex = undefined; m.predictedWinnerTeam = undefined;
+        m.prediction = undefined; m.userPicked = false;
+      }
       const teams = m.slots.map(resolveProjectedSlot);
       const prob = teams.length === 2 && !teams.some(t => t.placeholder) ? eloProbability(teams[0], teams[1]) : null;
       if (!prob) continue;
-      const idx = prob.pA >= prob.pB ? 0 : 1;
+      let idx = prob.pA >= prob.pB ? 0 : 1;
+      // A manual pick overrides the ELO favorite (but never an official result).
+      const picked = m.winnerIndex === undefined ? userPicks.get(m.id) : undefined;
+      if (picked) {
+        const ui = teams.findIndex(t => !t.placeholder && norm(t.name) === picked);
+        if (ui >= 0) { idx = ui; m.userPicked = true; }
+      }
       m.predictedWinnerIndex = idx;
       m.predictedWinnerTeam = { name: teams[idx].name, abbr: teams[idx].abbr };
       m.prediction = {
         teams,
         winner: teams[idx],
         winnerIndex: idx,
-        pWinner: Math.max(prob.pA, prob.pB),
+        pWinner: idx === 0 ? prob.pA : prob.pB,
         diff: idx === 0 ? prob.diff : -prob.diff,
         ra: prob.ra,
         rb: prob.rb,
@@ -476,7 +515,7 @@
 
   async function fetchScoreboardData() {
     const sources = [
-      { label: "GitHub cached scoreboard", url: LOCAL_SCOREBOARD_URL },
+      { label: "Repo scoreboard cache", url: LOCAL_SCOREBOARD_URL },
       { label: "ESPN direct scoreboard", url: ESPN_SCOREBOARD_URL }
     ];
     let lastError = null;
@@ -511,6 +550,7 @@
   }
 
   function render(message, isError=false) {
+    lastRender = { message, isError };
     const statusEl = document.getElementById("dataStatus");
     statusEl.innerHTML = `<span class="${isError ? "error" : ""}">${escapeHtml(message)}</span>`;
     document.getElementById("tzLabel").textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || "browser timezone";
@@ -580,7 +620,7 @@
     const isLive = m.state === "in";
     const statusClass = isLive ? "live" : isFinal ? "final" : "";
     const statusText = isLive ? "LIVE" : isFinal ? "FINAL" : "SCHEDULED";
-    const cardClass = isLive ? "live-game" : isFinal ? "final-game" : m.prediction ? "projected-game" : "";
+    const cardClass = isLive ? "live-game" : isFinal ? "final-game" : m.userPicked ? "user-game" : m.prediction ? "projected-game" : "";
     const score = idx => m.scores?.[idx] !== null && m.scores?.[idx] !== undefined ? m.scores[idx] : "";
     const h2h = getH2H(teams[0], teams[1]);
     return `<article class="game ${cardClass}">
@@ -588,8 +628,11 @@
       ${[0,1].map(i => {
         const officialWin = m.winnerIndex === i;
         const predWin = !isFinal && m.predictedWinnerIndex === i;
-        const cls = ["team", officialWin ? "official-winner" : "", predWin ? "predicted-winner" : "", teams[i]?.projected ? "projected" : ""].join(" ");
-        return `<div class="${cls}"><span class="name">${escapeHtml(teams[i]?.name || "TBD")}</span><span class="score">${escapeHtml(score(i))}</span></div>`;
+        const userWin = predWin && m.userPicked;
+        const pickable = !isFinal && !teams[i]?.placeholder;
+        const cls = ["team", officialWin ? "official-winner" : "", userWin ? "user-picked" : predWin ? "predicted-winner" : "", teams[i]?.projected ? "projected" : ""].join(" ");
+        const pickAttrs = pickable ? ` data-pickable="1" data-match-id="${escapeAttr(m.id)}" data-team-name="${escapeAttr(teams[i]?.name || "")}"` : "";
+        return `<div class="${cls}"${pickAttrs}><span class="name">${escapeHtml(teams[i]?.name || "TBD")}</span><span class="score">${escapeHtml(score(i))}</span></div>`;
       }).join("")}
       <div class="status"><span class="${statusClass}">${escapeHtml(statusText)}</span><span class="small">${escapeHtml(m.source === "live" ? "ESPN" : "fallback")}</span></div>
       ${renderElo(m)}
@@ -603,7 +646,7 @@
     const teams = p.teams;
     const width = Math.max(3, Math.min(97, Math.round(p.pWinner * 100)));
     const ratingsText = `${teams[0].name} ${p.ra} · ${teams[1].name} ${p.rb}`;
-    const label = m.state === "post" ? "Pre-match ELO pick" : "ELO pick";
+    const label = m.state === "post" ? "Pre-match ELO pick" : m.userPicked ? "Your pick" : "ELO pick";
     return `<div class="elo">
       <strong>${escapeHtml(label)}:</strong> ${escapeHtml(p.winner.name)} ${escapeHtml(pct(p.pWinner))} <span class="small">ΔELO ${p.diff >= 0 ? "+" : ""}${escapeHtml(Math.round(p.diff))}</span><br>
       <span class="small">${escapeHtml(ratingsText)}${p.external ? ` · ${escapeHtml(p.external)}` : ""}</span>
@@ -621,7 +664,46 @@
   }
   function escapeAttr(value) { return escapeHtml(value).replace(/`/g, "&#96;"); }
 
+  function recompute() {
+    computePredictions();
+    render(lastRender.message, lastRender.isError);
+  }
+
+  function updatePickCount() {
+    document.getElementById("pickCount").textContent = userPicks.size;
+  }
+
+  function setPredictMode(on) {
+    predictMode = on;
+    document.body.classList.toggle("predict-on", on);
+    const btn = document.getElementById("predictBtn");
+    btn.textContent = `Predict mode: ${on ? "on" : "off"}`;
+    btn.classList.toggle("toggle-on", on);
+    document.getElementById("predictControls").classList.toggle("hidden", !on);
+  }
+
   document.getElementById("refreshBtn").addEventListener("click", loadData);
+  document.getElementById("predictBtn").addEventListener("click", () => setPredictMode(!predictMode));
+  document.getElementById("resetPicksBtn").addEventListener("click", () => {
+    userPicks.clear(); updatePickCount(); recompute();
+  });
+  document.getElementById("upsetSlider").addEventListener("input", (e) => {
+    eloScaleFactor = Number(e.target.value);
+    document.getElementById("upsetVal").textContent = `${eloScaleFactor.toFixed(1)}×`;
+    recompute();
+  });
+  // Delegated click: in predict mode, clicking a team advances them (toggles off if already picked).
+  document.querySelector("main").addEventListener("click", (e) => {
+    if (!predictMode) return;
+    const teamEl = e.target.closest('.team[data-pickable="1"]');
+    if (!teamEl) return;
+    const id = teamEl.getAttribute("data-match-id");
+    const picked = norm(teamEl.getAttribute("data-team-name"));
+    if (userPicks.get(id) === picked) userPicks.delete(id);
+    else userPicks.set(id, picked);
+    updatePickCount(); recompute();
+  });
+
   resetMatches(); computePredictions(); render("Loading…"); loadData(); setInterval(loadData, TWO_HOURS_MS);
 })();
 </script>
