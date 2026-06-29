@@ -82,26 +82,31 @@
     .match-meta, .source-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
     .empty { color: var(--muted); padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
     .bracket-shell { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
-    #bracketScale { transform-origin: top left; width: max-content; }
+    #bracketScale { transform-origin: top left; width: max-content; position: relative; }
+    #connectors { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 0; }
     .scroll-hint { display: none; color: var(--faint); font-size: 12px; padding: 0 16px 6px; }
-    .bracket { display: flex; align-items: stretch; gap: 12px; padding: 4px; }
-    .bcol { display: flex; flex-direction: column; min-width: 186px; }
-    .bcol > h4 { text-align: center; margin: 0 0 8px; }
-    .bcol-body { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 8px; min-height: 540px; }
-    .bcol.center { min-width: 230px; justify-content: center; }
-    .bcol.center .center-body { justify-content: center; gap: 16px; min-height: 0; }
+    .bracket { display: flex; align-items: stretch; gap: 8px; padding: 4px; position: relative; z-index: 1; }
+    .bcol { display: flex; flex-direction: column; min-width: 132px; }
+    .bcol > h4 { text-align: center; margin: 0 0 8px; font-size: 11px; }
+    .bcol-body { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 6px; min-height: 470px; }
+    .bcol.center { min-width: 150px; justify-content: center; }
+    .bcol.center .center-body { justify-content: center; gap: 14px; min-height: 0; }
     .bcol.center .game { background: linear-gradient(180deg, rgba(85,214,190,.10), rgba(255,255,255,.03)); }
     .third { margin-top: 6px; }
     .third h4 { text-align: center; margin: 8px 0 6px; color: var(--faint); }
     .game {
       border: 1px solid rgba(255,255,255,.10);
       background: linear-gradient(180deg, var(--card), var(--card2));
-      border-radius: 14px; padding: 9px 10px; position: relative; overflow: hidden; cursor: pointer;
+      border-radius: 10px; padding: 6px 7px; position: relative; overflow: hidden; cursor: pointer;
     }
     .game .detail { display: none; }
     .game.expanded .detail { display: block; }
-    .game .chev { color: var(--faint); font-size: 11px; transition: transform .15s; display: inline-block; }
-    .game.expanded .chev { transform: rotate(90deg); }
+    .game .chev { color: var(--faint); font-size: 11px; }
+    .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 18px; background: rgba(3,7,18,.66); backdrop-filter: blur(3px); }
+    .modal.hidden { display: none; }
+    .modal-card { position: relative; width: min(460px, 100%); max-height: 86vh; overflow-y: auto; background: var(--panel2); border: 1px solid rgba(255,255,255,.14); border-radius: var(--radius); box-shadow: 0 30px 80px rgba(0,0,0,.5); padding: 18px; }
+    .modal-card .team { cursor: default; }
+    .modal-close { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; padding: 0; border-radius: 999px; background: rgba(255,255,255,.1); color: var(--text); box-shadow: none; font-size: 18px; line-height: 1; }
     .team.implied-winner { background: rgba(185,156,255,.13); color: #fbf8ff; font-weight: 850; box-shadow: inset 0 0 0 1px rgba(185,156,255,.4); }
     .game.implied-game { border-color: rgba(185,156,255,.4); }
     .game::after {
@@ -110,16 +115,16 @@
     .game.live-game { border-color: rgba(255,107,107,.55); box-shadow: 0 0 0 1px rgba(255,107,107,.18) inset; }
     .game.final-game { border-color: rgba(142,226,142,.42); }
     .game.projected-game { border-color: rgba(185,156,255,.34); }
-    .kicker { color: var(--muted); font-size: 11px; margin-bottom: 7px; display:flex; justify-content:space-between; gap:6px; }
+    .kicker { color: var(--muted); font-size: 10px; margin-bottom: 5px; display:flex; justify-content:space-between; gap:6px; white-space: nowrap; }
     .team {
-      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 6px 8px; border-radius: 10px; align-items: center;
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; padding: 4px 6px; border-radius: 8px; align-items: center; font-size: 13px;
     }
-    .team + .team { margin-top: 3px; }
+    .team + .team { margin-top: 2px; }
     .team.official-winner { background: rgba(85,214,190,.14); color: #f3fffd; font-weight: 900; }
     .team.predicted-winner { background: rgba(185,156,255,.13); color: #fbf8ff; font-weight: 850; }
     .team .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .team.projected .name::after { content: "  projected"; color: var(--faint); font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; }
-    .team .score { font-variant-numeric: tabular-nums; font-weight: 900; min-width: 24px; text-align: right; }
+    .team .score { font-variant-numeric: tabular-nums; font-weight: 900; min-width: 18px; text-align: right; }
     .team.user-picked { background: rgba(85,214,190,.24); color: #eafffb; font-weight: 900; box-shadow: 0 0 0 1px rgba(85,214,190,.55) inset; }
     body.predict-on .game .team[data-pickable="1"] { cursor: pointer; }
     body.predict-on .game .team[data-pickable="1"]:hover { background: rgba(255,255,255,.12); }
@@ -161,10 +166,11 @@
     @media print {
       header { position: static; }
       body { background: #fff; color: #111; }
-      section, .panel, .quarter, .game { box-shadow: none; background: #fff; border-color: #bbb; }
+      section, .panel, .game { box-shadow: none; background: #fff; border-color: #bbb; }
       .bracket-shell { overflow: visible; height: auto !important; }
       #bracketScale { transform: none !important; width: auto !important; }
-      .game .detail { display: block !important; }
+      #connectors path { stroke: #999 !important; }
+      .modal { display: none !important; }
       .bcol-body { min-height: 0; }
     }
   </style>
@@ -246,12 +252,20 @@
     <div class="scroll-hint">← Scroll horizontally to see the full bracket →</div>
     <div class="bracket-shell">
       <div id="bracketScale">
+        <svg id="connectors" aria-hidden="true" preserveAspectRatio="none"></svg>
         <div id="bracket" class="bracket" aria-live="polite"></div>
       </div>
     </div>
   </section>
 
   <p class="source-note" id="statusNote" style="margin-top:20px;"></p>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <button class="modal-close" type="button" aria-label="Close">×</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
 
   <section id="sources" style="margin-top:18px;">
     <div class="section-inner">
@@ -411,7 +425,7 @@
   const recentData = new Map();      // matchId -> { market, cards, news }
   const SUMMARY_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=";
   let selectedTZ = "";               // "" = browser default, else IANA tz name
-  const expandedCards = new Set();   // matchIds whose detail is expanded
+  let modalOpenId = null;            // matchId whose detail popup is open
   const implicitPicks = new Set();   // matchIds forced by a downstream explicit pick
   let subtreeTeams = new Map();      // matchId -> Set of normalized team names that can reach it
 
@@ -495,10 +509,11 @@
   function formatDate(iso, options={}) {
     const d = new Date(iso);
     return new Intl.DateTimeFormat(undefined, {
-      weekday: options.short ? "short" : "long", month: "short", day: "numeric",
+      weekday: options.compact ? undefined : (options.short ? "short" : "long"),
+      month: "short", day: "numeric",
       hour: "numeric", minute: "2-digit",
       timeZone: selectedTZ || undefined,
-      timeZoneName: (options.tz || selectedTZ) ? "short" : undefined
+      timeZoneName: options.tz ? "short" : undefined
     }).format(d);
   }
 
@@ -771,6 +786,7 @@
         : "live fetch pending — showing snapshot";
     }
     renderUpcoming(); renderBracket(); renderPathSummary();
+    if (modalOpenId && byId.get(modalOpenId)) document.getElementById("modalBody").innerHTML = renderDetail(byId.get(modalOpenId));
     fitBracket();
   }
 
@@ -790,6 +806,44 @@
     const rect = inner.getBoundingClientRect();
     shell.style.height = (rect.height + 32) + "px";
     if (hint) hint.style.display = (contentW * s > avail + 1) ? "block" : "none";
+    drawConnectors(s);
+  }
+
+  // Draw bracket elbow lines from each feeder card to the match it feeds, using measured positions.
+  function drawConnectors(s) {
+    const svg = document.getElementById("connectors");
+    const scaleEl = document.getElementById("bracketScale");
+    const bracket = document.getElementById("bracket");
+    if (!svg || !scaleEl || !bracket) return;
+    const W = bracket.scrollWidth, H = bracket.scrollHeight;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("width", W); svg.setAttribute("height", H);
+    const origin = scaleEl.getBoundingClientRect();
+    const localRect = (el) => {
+      const r = el.getBoundingClientRect();
+      const left = (r.left - origin.left) / s, right = (r.right - origin.left) / s;
+      const top = (r.top - origin.top) / s, bottom = (r.bottom - origin.top) / s;
+      return { left, right, top, bottom, cy: (top + bottom) / 2 };
+    };
+    const paths = [];
+    for (const m of matches) {
+      const parentEl = bracket.querySelector(`.game[data-match-id="${m.id}"]`);
+      if (!parentEl) continue;
+      const P = localRect(parentEl);
+      const pcx = (P.left + P.right) / 2;
+      for (const slot of m.slots) {
+        if (slot.type !== "winner") continue;                 // skip loser feeders (third place)
+        const fEl = bracket.querySelector(`.game[data-match-id="${slot.matchId}"]`);
+        if (!fEl) continue;
+        const F = localRect(fEl);
+        const leftSide = (F.left + F.right) / 2 < pcx;
+        const fx = leftSide ? F.right : F.left;
+        const px = leftSide ? P.left : P.right;
+        const midX = (fx + px) / 2;
+        paths.push(`M ${fx.toFixed(1)} ${F.cy.toFixed(1)} H ${midX.toFixed(1)} V ${P.cy.toFixed(1)} H ${px.toFixed(1)}`);
+      }
+    }
+    svg.innerHTML = `<path d="${paths.join(" ")}" fill="none" stroke="rgba(159,177,199,.35)" stroke-width="1.25" />`;
   }
   window.addEventListener("resize", () => {
     if (fitScheduled) return;
@@ -882,13 +936,8 @@
     const isLive = m.state === "in";
     const statusClass = isLive ? "live" : isFinal ? "final" : "";
     const statusText = isLive ? "LIVE" : isFinal ? "FINAL" : "SCHEDULED";
-    const expanded = expandedCards.has(m.id);
-    const cardClass = [
-      isLive ? "live-game" : isFinal ? "final-game" : m.userPicked ? "user-game" : m.implied ? "implied-game" : m.prediction ? "projected-game" : "",
-      expanded ? "expanded" : ""
-    ].filter(Boolean).join(" ");
+    const cardClass = isLive ? "live-game" : isFinal ? "final-game" : m.userPicked ? "user-game" : m.implied ? "implied-game" : m.prediction ? "projected-game" : "";
     const score = idx => m.scores?.[idx] !== null && m.scores?.[idx] !== undefined ? m.scores[idx] : "";
-    const h2h = getH2H(teams[0], teams[1]);
     const teamsHtml = [0,1].map(i => {
       const officialWin = m.winnerIndex === i;
       const predWin = !isFinal && m.predictedWinnerIndex === i;
@@ -901,17 +950,34 @@
       const pickAttrs = pickable ? ` data-pickable="1" data-match-id="${escapeAttr(m.id)}" data-team-name="${escapeAttr(teams[i]?.name || "")}"` : "";
       return `<div class="${cls}"${pickAttrs}><span class="name">${escapeHtml(teams[i]?.name || "TBD")}</span><span class="score">${escapeHtml(score(i))}</span></div>`;
     }).join("");
-    const tag = m.userPicked ? `<span class="small pred-label">your pick</span>` : m.implied ? `<span class="small">implied</span>` : "";
+    const tag = m.userPicked ? `<span class="small pred-label">pick</span>` : m.implied ? `<span class="small">implied</span>` : "";
     return `<article class="game ${cardClass}" data-match-id="${escapeAttr(m.id)}">
-      <div class="kicker"><span>${escapeHtml(m.stage)} · ${escapeHtml(formatDate(m.kickoff, {short:true}))}</span><span class="chev">▸</span></div>
+      <div class="kicker"><span>${escapeHtml(formatDate(m.kickoff, {compact:true}))}</span><span class="chev">ⓘ</span></div>
       ${teamsHtml}
       <div class="status"><span class="${statusClass}">${escapeHtml(statusText)}</span>${tag}</div>
-      <div class="detail">
-        ${renderElo(m)}
-        ${renderRecent(m)}
-        ${h2h ? `<div class="h2h"><strong>Recent H2H:</strong> ${h2h.url ? `<a href="${escapeAttr(h2h.url)}" target="_blank" rel="noopener">${escapeHtml(h2h.text)}</a>` : escapeHtml(h2h.text)}</div>` : `<div class="h2h"><strong>Recent H2H:</strong> ${escapeHtml(H2H_FALLBACK)}</div>`}
-      </div>
     </article>`;
+  }
+
+  function renderDetail(m) {
+    const teams = m.slots.map(resolveProjectedSlot);
+    const h2h = getH2H(teams[0], teams[1]);
+    const score = idx => m.scores?.[idx] !== null && m.scores?.[idx] !== undefined ? m.scores[idx] : "";
+    const isFinal = m.state === "post";
+    const rows = [0,1].map(i => {
+      const win = m.winnerIndex === i || (!isFinal && m.predictedWinnerIndex === i);
+      return `<div class="team ${win ? "predicted-winner" : ""}"><span class="name">${escapeHtml(teams[i]?.name || "TBD")}</span><span class="score">${escapeHtml(score(i))}</span></div>`;
+    }).join("");
+    const h2hHtml = h2h
+      ? `<div class="h2h"><strong>Recent H2H:</strong> ${h2h.url ? `<a href="${escapeAttr(h2h.url)}" target="_blank" rel="noopener">${escapeHtml(h2h.text)}</a>` : escapeHtml(h2h.text)}</div>`
+      : `<div class="h2h"><strong>Recent H2H:</strong> ${escapeHtml(H2H_FALLBACK)}</div>`;
+    const link = m.espnLink ? `<p class="small" style="margin-top:8px;"><a href="${escapeAttr(m.espnLink)}" target="_blank" rel="noopener">ESPN match center →</a></p>` : "";
+    return `<h3 style="margin:0 0 4px;">${escapeHtml(m.stage)}</h3>
+      <div class="small" style="margin-bottom:10px;">${escapeHtml(formatDate(m.kickoff, {tz:true}))}</div>
+      ${rows}
+      ${renderElo(m)}
+      ${renderRecent(m)}
+      ${h2hHtml}
+      ${link}`;
   }
 
   function renderElo(m) {
@@ -1028,13 +1094,25 @@
       return;
     }
     const card = e.target.closest('.game[data-match-id]');
-    if (card) {
-      const id = card.getAttribute("data-match-id");
-      if (expandedCards.has(id)) expandedCards.delete(id);
-      else expandedCards.add(id);
-      recompute();
-    }
+    if (card) openModal(card.getAttribute("data-match-id"));
   });
+
+  function openModal(id) {
+    const m = byId.get(id);
+    if (!m) return;
+    modalOpenId = id;
+    document.getElementById("modalBody").innerHTML = renderDetail(m);
+    document.getElementById("modal").classList.remove("hidden");
+  }
+  function closeModal() {
+    modalOpenId = null;
+    document.getElementById("modal").classList.add("hidden");
+  }
+  document.querySelector(".modal-close").addEventListener("click", closeModal);
+  document.getElementById("modal").addEventListener("click", (e) => {
+    if (e.target.id === "modal") closeModal();   // click backdrop
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
   resetMatches(); computePredictions(); render("Loading…"); loadData(); setInterval(loadData, TWO_HOURS_MS);
 })();
