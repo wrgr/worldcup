@@ -82,17 +82,17 @@
     .match-meta, .source-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
     .empty { color: var(--muted); padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
     .bracket-shell { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
-    #bracketScale { transform-origin: top left; width: max-content; position: relative; }
+    #bracketScale { width: 100%; position: relative; }
     #connectors { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 0; }
     .scroll-hint { display: none; color: var(--faint); font-size: 12px; padding: 0 16px 6px; }
-    .bracket { display: flex; align-items: stretch; gap: 8px; padding: 4px; position: relative; z-index: 1; }
-    .bcol { display: flex; flex-direction: column; min-width: 132px; }
+    .bracket { display: flex; align-items: stretch; gap: 10px; padding: 4px; position: relative; z-index: 1; width: 100%; }
+    .bcol { flex: 1 1 0; display: flex; flex-direction: column; min-width: 116px; }
     .bcol > h4 { text-align: center; margin: 0 0 8px; font-size: 11px; }
     .bcol-body { flex: 1; display: flex; flex-direction: column; min-height: 560px; }
     .bcol-body.split { gap: 34px; }
     .bcol-body.split .quad { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 6px; }
     .bcol-body.solo { justify-content: center; }
-    .bcol.center { min-width: 150px; justify-content: center; }
+    .bcol.center { flex: 1.15 1 0; min-width: 150px; }
     .bcol.center .center-body { justify-content: center; gap: 14px; min-height: 0; }
     .when { font-size: 9.5px; color: var(--faint); margin-bottom: 4px; white-space: nowrap; padding-right: 12px; }
     .bcol.center .game { background: linear-gradient(180deg, rgba(85,214,190,.10), rgba(255,255,255,.03)); }
@@ -799,21 +799,11 @@
 
   let fitScheduled = false;
   function fitBracket() {
+    // The bracket fills its container via flex; we only flag horizontal scroll on very narrow screens.
     const shell = document.querySelector(".bracket-shell");
-    const inner = document.getElementById("bracketScale");
     const hint = document.querySelector(".scroll-hint");
-    if (!shell || !inner) return;
-    inner.style.transform = "scale(1)";
-    shell.style.height = "";
-    const avail = shell.clientWidth - 32;            // 16px padding each side
-    const contentW = inner.scrollWidth;
-    let s = contentW > 0 ? avail / contentW : 1;
-    s = Math.max(0.5, Math.min(1, s));               // floor so it stays legible
-    inner.style.transform = `scale(${s})`;
-    const rect = inner.getBoundingClientRect();
-    shell.style.height = (rect.height + 32) + "px";
-    if (hint) hint.style.display = (contentW * s > avail + 1) ? "block" : "none";
-    drawConnectors(s);
+    if (shell && hint) hint.style.display = (shell.scrollWidth > shell.clientWidth + 1) ? "block" : "none";
+    drawConnectors(1);
   }
 
   // Draw bracket elbow lines from each feeder card to the match it feeds, using measured positions.
