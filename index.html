@@ -165,6 +165,7 @@
   <div class="subhead">
     <span class="pill"><span class="dot"></span><span id="dataStatus">Loading live data…</span></span>
     <span class="pill">Auto-refresh: every 2 hours</span>
+    <span class="pill" title="When live data was last successfully retrieved">Last updated: <span id="lastUpdated">—</span></span>
     <span class="pill">ELO predictions recompute after each result</span>
     <span class="pill">Times: <span id="tzLabel">browser timezone</span></span>
     <button id="refreshBtn" type="button">Refresh now</button>
@@ -350,6 +351,8 @@
   let eloScaleFactor = 1;            // multiplies the ELO logistic divisor (higher = more upsets)
   const userPicks = new Map();       // matchId -> normalized chosen team name
   let lastRender = { message: "Loading…", isError: false };
+  let lastUpdated = null;            // Date of last successful live retrieval
+  let lastUpdatedSource = null;      // which source supplied it
 
   function team(name, abbr) { return { type:"team", name, abbr }; }
   function from(matchId) { return { type:"winner", matchId }; }
@@ -541,8 +544,10 @@
       statusEl.textContent = "Refreshing live data…";
       const { data, label } = await fetchScoreboardData();
       (data.events || []).forEach(ingestESPNEvent);
+      lastUpdated = new Date();
+      lastUpdatedSource = label;
       computePredictions();
-      render(`${label} check: ${new Date().toLocaleString()}`);
+      render(`Live data from ${label}.`);
     } catch (err) {
       computePredictions();
       render(`Using fallback snapshot — live refresh failed: ${err.message}`, true);
@@ -554,6 +559,12 @@
     const statusEl = document.getElementById("dataStatus");
     statusEl.innerHTML = `<span class="${isError ? "error" : ""}">${escapeHtml(message)}</span>`;
     document.getElementById("tzLabel").textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || "browser timezone";
+    const updEl = document.getElementById("lastUpdated");
+    if (updEl) {
+      updEl.textContent = lastUpdated
+        ? `${lastUpdated.toLocaleString()}${lastUpdatedSource ? ` (${lastUpdatedSource})` : ""}`
+        : "live fetch pending — showing snapshot";
+    }
     renderUpcoming(); renderQuarters(); renderFinals(); renderPathSummary();
   }
 
@@ -599,6 +610,19 @@
       <div class="panel section-inner semi-col"><h3>Semifinal side B</h3>${renderGame(sf2)}</div>`;
   }
 
+  function championRunProbability(championName) {
+    if (!championName) return null;
+    const cn = norm(championName);
+    let p = 1, rounds = 0;
+    for (const m of matches) {
+      if (m.winnerTeam && norm(m.winnerTeam.name) === cn) { rounds++; continue; }          // already won: probability 1
+      if (!m.winnerTeam && m.prediction && m.predictedWinnerTeam && norm(m.predictedWinnerTeam.name) === cn) {
+        p *= m.prediction.pWinner; rounds++;
+      }
+    }
+    return rounds ? p : null;
+  }
+
   function renderPathSummary() {
     const final = byId.get("53452537");
     const champion = final?.winnerTeam || final?.predictedWinnerTeam;
@@ -606,11 +630,17 @@
     const rightSemi = byId.get("53452535")?.predictedWinnerTeam || byId.get("53452535")?.winnerTeam;
     const finalProb = final?.prediction ? pct(final.prediction.pWinner) : "n/a";
     const topSeeds = matches.filter(m => m.round === "qf").map(m => m.predictedWinnerTeam?.name).filter(Boolean).join(" · ");
+    const runProb = championRunProbability(champion?.name);
+    const runLabel = final?.state === "post"
+      ? "(official)"
+      : runProb !== null
+        ? `~${pct(runProb)} to win it all along this path`
+        : `(final-match ELO edge ${escapeHtml(finalProb)})`;
     document.getElementById("pathSummary").innerHTML = `
-      <strong>Current ELO-projected champion:</strong> ${escapeHtml(champion?.name || "TBD")} ${final?.state === "post" ? "(official)" : `(final-match ELO edge ${escapeHtml(finalProb)})`}<br>
+      <strong>${champion?.name && userPicks.size ? "Your projected champion" : "Current ELO-projected champion"}:</strong> ${escapeHtml(champion?.name || "TBD")} ${escapeHtml(runLabel)}<br>
       <strong>Projected finalists:</strong> ${escapeHtml(leftSemi?.name || "TBD")} vs ${escapeHtml(rightSemi?.name || "TBD")}<br>
       <strong>Projected semifinalists:</strong> ${escapeHtml(topSeeds || "TBD")}<br>
-      <span class="small">Projection updates after ESPN results are ingested. Official winners override ELO picks.</span>`;
+      <span class="small">Win-it-all % multiplies each round's ELO edge along the projected path (assumes the projected opponents). Updates with picks, results, and the upset slider.</span>`;
   }
 
   function renderGame(m) {

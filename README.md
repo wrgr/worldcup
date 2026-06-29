@@ -14,8 +14,7 @@ No build step and no server — everything runs in the browser from a single HTM
 
 ## Files
 
-- `index.html` — the entire app (markup, styles, and logic). This is the GitHub Pages entry point.
-- `world_cup_live_bracket.html` — a byte-identical copy of `index.html` for opening the bracket directly from disk (`file://`). Kept in sync with `index.html`; edit `index.html` and copy it over.
+- `index.html` — the entire app (markup, styles, and logic). This is the GitHub Pages entry point, and also opens directly from disk (`file://`).
 - `scoreboard.json` — optional scoreboard cache read first on load. The committed file is an empty placeholder; the page falls back to ESPN live if it has no events.
 - `.nojekyll` — tells GitHub Pages to serve files as-is (no Jekyll processing).
 
