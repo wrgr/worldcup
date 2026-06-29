@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>World Cup 2026 Live ELO Decision-Tree Bracket</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg2: #030712;
+      --panel: rgba(13,27,45,.86);
+      --panel2: rgba(16,36,60,.92);
+      --card: rgba(255,255,255,.055);
+      --card2: rgba(255,255,255,.028);
+      --text: #edf5ff;
+      --muted: #9fb1c7;
+      --faint: #6f849d;
+      --line: #2a4568;
+      --accent: #55d6be;
+      --accent2: #9ee9ff;
+      --warn: #ffd166;
+      --hot: #ff6b6b;
+      --good: #8ee28e;
+      --pred: #b99cff;
+      --shadow: rgba(0,0,0,.28);
+      --radius: 16px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(30,91,156,.60) 0, rgba(30,91,156,.10) 30%, transparent 52%),
+        radial-gradient(circle at 100% 10%, rgba(85,214,190,.20) 0, transparent 32%),
+        linear-gradient(135deg, var(--bg), var(--bg2));
+    }
+    header {
+      padding: 28px clamp(16px, 3vw, 42px) 18px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(13,27,45,.98), rgba(13,27,45,.68));
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 4.2vw, 52px); letter-spacing: -.045em; line-height: .97; }
+    .subhead { color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; line-height: 1.4; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);
+      color: var(--text); border-radius: 999px; padding: 7px 10px; font-size: 13px; white-space: nowrap;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 16px var(--accent); }
+    button {
+      border: 0; background: var(--accent); color: #042018; padding: 9px 13px; border-radius: 999px;
+      font-weight: 850; cursor: pointer; box-shadow: 0 10px 30px rgba(85,214,190,.16);
+    }
+    button:hover { filter: brightness(1.08); }
+    main { padding: 22px clamp(16px, 3vw, 42px) 42px; }
+    .top-grid { display: grid; grid-template-columns: minmax(280px, 440px) 1fr; gap: 20px; align-items: start; }
+    @media (max-width: 1050px) { .top-grid { grid-template-columns: 1fr; } }
+    section, .panel {
+      background: var(--panel); border: 1px solid rgba(255,255,255,.09); border-radius: var(--radius);
+      box-shadow: 0 20px 60px var(--shadow);
+    }
+    .section-inner { padding: 18px; }
+    h2 { margin: 0 0 14px; font-size: 19px; letter-spacing: -.02em; }
+    h3 { margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: #d8e8ff; }
+    h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    .upcoming-list { display: flex; flex-direction: column; gap: 10px; }
+    .upcoming-card {
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 12px;
+    }
+    .match-time { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+    .match-title { display: flex; justify-content: space-between; gap: 10px; align-items: center; font-weight: 850; }
+    .match-meta, .source-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
+    .empty { color: var(--muted); padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
+    .bracket-shell { overflow-x: auto; padding: 16px; }
+    .quarters {
+      display: grid; grid-template-columns: repeat(2, minmax(690px, 1fr)); gap: 16px; min-width: 1420px;
+    }
+    .quarter {
+      background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 14px;
+      position: relative;
+    }
+    .quarter-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .quarter-title strong { font-size: 15px; letter-spacing: -.01em; }
+    .tree {
+      display: grid; grid-template-columns: 1.22fr 1.02fr .96fr; gap: 22px; align-items: stretch; position: relative;
+    }
+    .tree-col { display: grid; gap: 12px; align-content: center; }
+    .tree-col.r32 { grid-template-rows: repeat(4, minmax(116px, auto)); }
+    .tree-col.r16 { grid-template-rows: repeat(2, minmax(150px, auto)); }
+    .tree-col.qf { grid-template-rows: minmax(210px, auto); }
+    .connector-note { color: var(--faint); font-size: 11px; margin-top: 8px; }
+    .finals-wrap { margin-top: 20px; display: grid; grid-template-columns: 1fr minmax(320px, 520px) 1fr; gap: 16px; min-width: 1120px; }
+    .semi-col { display: grid; gap: 14px; align-content: center; }
+    .final-col { display: grid; gap: 14px; align-content: center; }
+    .game {
+      border: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border-radius: 14px; padding: 10px; min-height: 112px; position: relative; overflow: hidden;
+    }
+    .game::after {
+      content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: rgba(255,255,255,.08);
+    }
+    .game.live-game { border-color: rgba(255,107,107,.55); box-shadow: 0 0 0 1px rgba(255,107,107,.18) inset; }
+    .game.final-game { border-color: rgba(142,226,142,.42); }
+    .game.projected-game { border-color: rgba(185,156,255,.34); }
+    .kicker { color: var(--muted); font-size: 11px; margin-bottom: 7px; display:flex; justify-content:space-between; gap:6px; }
+    .team {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 6px 8px; border-radius: 10px; align-items: center;
+    }
+    .team + .team { margin-top: 3px; }
+    .team.official-winner { background: rgba(85,214,190,.14); color: #f3fffd; font-weight: 900; }
+    .team.predicted-winner { background: rgba(185,156,255,.13); color: #fbf8ff; font-weight: 850; }
+    .team .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .team.projected .name::after { content: "  projected"; color: var(--faint); font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; }
+    .team .score { font-variant-numeric: tabular-nums; font-weight: 900; min-width: 24px; text-align: right; }
+    .status { margin-top: 8px; color: var(--muted); font-size: 12px; display:flex; justify-content:space-between; gap:8px; align-items: center; }
+    .live { color: var(--hot); font-weight: 900; }
+    .final { color: var(--good); font-weight: 900; }
+    .pred-label { color: var(--pred); font-weight: 900; }
+    .elo { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); font-size: 12px; color: #d9e7ff; line-height: 1.35; }
+    .elo strong { color: var(--text); }
+    .probbar { margin-top: 6px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+    .probbar > span { display: block; height: 100%; width: 50%; background: linear-gradient(90deg, var(--pred), var(--accent2)); border-radius: 999px; }
+    .h2h { margin-top: 7px; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+    .legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .legend span { font-size: 12px; color: var(--muted); padding: 6px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); }
+    details { margin-top: 14px; color: var(--muted); font-size: 13px; }
+    summary { cursor: pointer; color: var(--text); }
+    a { color: #9ee9ff; }
+    .error { color: var(--warn); }
+    .small { font-size: 12px; color: var(--muted); }
+    .model-card { margin-top: 14px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 12px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .model-card code { color: #f6f9ff; background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 5px; }
+    .source-list { padding-left: 18px; margin: 8px 0 0; }
+    @media print {
+      header { position: static; }
+      body { background: #fff; color: #111; }
+      section, .panel, .quarter, .game { box-shadow: none; background: #fff; border-color: #bbb; }
+      .bracket-shell { overflow: visible; }
+      .quarters, .finals-wrap { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>World Cup 2026 Live ELO Decision-Tree Bracket</h1>
+  <div class="subhead">
+    <span class="pill"><span class="dot"></span><span id="dataStatus">Loading live data…</span></span>
+    <span class="pill">Auto-refresh: every 2 hours</span>
+    <span class="pill">ELO predictions recompute after each result</span>
+    <span class="pill">Times: <span id="tzLabel">browser timezone</span></span>
+    <button id="refreshBtn" type="button">Refresh now</button>
+  </div>
+</header>
+<main>
+  <div class="top-grid">
+    <section>
+      <div class="section-inner">
+        <h2>Upcoming matches</h2>
+        <div id="upcoming" class="upcoming-list"></div>
+        <div class="legend">
+          <span>Green = official winner</span>
+          <span>Purple = ELO projected winner</span>
+          <span>H2H = senior full internationals found since 2022-06-29</span>
+        </div>
+        <details>
+          <summary>Model and source notes</summary>
+          <div class="model-card">
+            <strong>Prediction layer:</strong> each unresolved match uses the embedded ELO table and the standard logistic transform <code>1/(1+10^(-ΔELO/400))</code>. It ignores injuries, rest, travel, home advantage, styles, and penalty-specific skill unless already reflected in the rating.
+          </div>
+          <p class="source-note">
+            <strong>Live layer:</strong> the GitHub version first reads <code>data/scoreboard.json</code>, which the included GitHub Action refreshes every two hours. If that file is missing or stale, the page tries ESPN's public World Cup scoreboard feed directly. If both fetches fail, it falls back to the embedded knockout snapshot. Official fixtures/results should be checked against FIFA's fixture page.
+          </p>
+          <ul class="source-list source-note">
+            <li><a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums" target="_blank" rel="noopener">FIFA official schedule / results</a></li>
+            <li><a href="https://www.espn.com/soccer/scoreboard/_/league/fifa.world" target="_blank" rel="noopener">ESPN World Cup scoreboard</a></li>
+            <li><a href="https://www.economicsobservatory.com/the-world-cup-2026-knockout-stages-begin-is-football-coming-home" target="_blank" rel="noopener">Economics Observatory last-32 ELO/probability table</a></li>
+          </ul>
+        </details>
+      </div>
+    </section>
+    <section>
+      <div class="section-inner">
+        <h2>Projected path</h2>
+        <div id="pathSummary" class="model-card">Computing projection…</div>
+      </div>
+    </section>
+  </div>
+
+  <section style="margin-top:20px;">
+    <div class="bracket-shell">
+      <div id="quarters" class="quarters" aria-live="polite"></div>
+      <div id="finals" class="finals-wrap" aria-live="polite"></div>
+    </div>
+  </section>
+</main>
+<script>
+(() => {
+  const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+  const LOCAL_SCOREBOARD_URL = "data/scoreboard.json";
+  const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260628-20260719&limit=250";
+  const CUTOFF = "2022-06-29";
+
+  const ELO_SOURCE_LABEL = "Economics Observatory 2026 knockout preview, published 2026-06-28";
+  const eloRatings = {
+    "argentina": 1477, "spain": 1434, "france": 1452, "england": 1381, "colombia": 1377,
+    "brazil": 1364, "portugal": 1378, "belgium": 1287, "netherlands": 1339, "germany": 1324,
+    "morocco": 1304, "japan": 1311, "switzerland": 1270, "croatia": 1298, "ecuador": 1278,
+    "norway": 1208, "senegal": 1224, "algeria": 1221, "austria": 1212, "paraguay": 1223,
+    "mexico": 1303, "united states": 1254, "australia": 1216, "egypt": 1200, "canada": 1239,
+    "ivory coast": 1201, "dr congo": 1118, "sweden": 1188, "south africa": 1095, "cape verde": 1096,
+    "ghana": 1036, "bosnia and herzegovina": 1062
+  };
+
+  const sourceModelProgress = {
+    "argentina|cape verde": "External model: Argentina progresses 97%",
+    "colombia|ghana": "External model: Colombia progresses 89%",
+    "france|sweden": "External model: France progresses 88%",
+    "bosnia and herzegovina|united states": "External model: USA progresses 82%",
+    "germany|paraguay": "External model: Germany progresses 77%",
+    "dr congo|england": "External model: England progresses 73%",
+    "austria|spain": "External model: Spain progresses 71%",
+    "belgium|senegal": "External model: Belgium progresses 67%",
+    "canada|south africa": "External model: Canada progresses 66%",
+    "croatia|portugal": "External model: Portugal progresses 65%",
+    "ivory coast|norway": "External model: Norway progresses 56%",
+    "ecuador|mexico": "External model: Mexico progresses 55%",
+    "algeria|switzerland": "External model: Algeria progresses 55%",
+    "brazil|japan": "External model: Brazil progresses 54%",
+    "morocco|netherlands": "External model: Netherlands progresses 54%",
+    "australia|egypt": "External model: Australia progresses 54%"
+  };
+
+  const nameAliases = new Map(Object.entries({
+    "usa": "united states", "u s": "united states", "u s a": "united states", "united states": "united states",
+    "usmnt": "united states", "korea republic": "south korea", "south korea": "south korea",
+    "cote d ivoire": "ivory coast", "cote divoire": "ivory coast", "côte d’ivoire": "ivory coast", "ivory coast": "ivory coast",
+    "congo dr": "dr congo", "congo, dr": "dr congo", "dr congo": "dr congo", "dem rep of congo": "dr congo", "democratic republic of congo": "dr congo",
+    "cabo verde": "cape verde", "cape verde": "cape verde",
+    "bosnia herz": "bosnia and herzegovina", "bosnia hz": "bosnia and herzegovina", "bosnia-herzegovina": "bosnia and herzegovina", "bosnia and herzegovina": "bosnia and herzegovina",
+    "turkiye": "turkey", "türkiye": "turkey", "czech republic": "czechia", "ir iran": "iran"
+  }));
+
+  const recentH2H = new Map([
+    [pairKey("Brazil", "Japan"), {
+      text: "Since " + CUTOFF + ": Japan beat Brazil 3–2 in an Oct 2025 friendly. Brazil also won 1–0 in Jun 2022, just outside the exact four-year cutoff.",
+      url: "https://www.reuters.com/sports/soccer/japan-coach-vows-pick-penalty-shootout-takers-against-brazil-2026-06-28/"
+    }],
+    [pairKey("Mexico", "Ecuador"), {
+      text: "Since " + CUTOFF + ": Mexico 0–0 Ecuador at Copa América 2024; Ecuador advanced and Mexico exited.",
+      url: "https://www.espn.com/soccer/match/_/gameId/690723/ecuador-mexico"
+    }],
+    [pairKey("Portugal", "Croatia"), {
+      text: "Since " + CUTOFF + ": Croatia beat Portugal 2–1 in a Jun 2024 friendly; later 2024–25 Nations League meetings were also tight.",
+      url: "https://www.uefa.com/news-media/video/028e-1b16e551991d-504e0b0b7f8d-1000--highlights-portugal-1-2-croatia/"
+    }],
+    [pairKey("United States", "Bosnia and Herzegovina"), {
+      text: "No senior full international found since " + CUTOFF + ". Last listed meetings: USA 1–0 Bosnia in Dec 2021, 0–0 in 2018, USA 4–3 in 2013.",
+      url: "https://www.espn.co.uk/football/match/_/gameId/760494/bosnia-herzegovina-united-states"
+    }],
+    [pairKey("France", "Sweden"), {
+      text: "No senior full international found since " + CUTOFF + ". Their last listed meeting was Sweden 0–1 France in the 2020 Nations League.",
+      url: "https://www.espn.com/soccer/match/_/gameId/570771/france-sweden"
+    }],
+    [pairKey("Netherlands", "Morocco"), {
+      text: "No senior full international found since " + CUTOFF + ". Their 2026 tie has a 1994 World Cup backstory rather than a recent H2H sample.",
+      url: "https://www.theguardian.com/football/2026/jun/28/street-football-on-world-stage-morocco-and-netherlands-face-off-in-last-32-game-with-a-backstory"
+    }]
+  ]);
+
+  const baseMatches = [
+    { id:"53452545", key:"m73", round:"r32", kickoff:"2026-06-28T19:00:00Z", stage:"Round of 32", slots:[team("South Africa","RSA"), team("Canada","CAN")], next:"53452511", fallback:{state:"post", detail:"Full time", scores:[0,1], winner:"Canada"}},
+    { id:"53452557", key:"m76", round:"r32", kickoff:"2026-06-29T17:00:00Z", stage:"Round of 32", slots:[team("Brazil","BRA"), team("Japan","JPN")], next:"53452517"},
+    { id:"53452541", key:"m74", round:"r32", kickoff:"2026-06-29T20:30:00Z", stage:"Round of 32", slots:[team("Germany","GER"), team("Paraguay","PAR")], next:"53452509"},
+    { id:"53452547", key:"m75", round:"r32", kickoff:"2026-06-30T01:00:00Z", stage:"Round of 32", slots:[team("Netherlands","NED"), team("Morocco","MAR")], next:"53452511"},
+    { id:"53452561", key:"m78", round:"r32", kickoff:"2026-06-30T17:00:00Z", stage:"Round of 32", slots:[team("Ivory Coast","CIV"), team("Norway","NOR")], next:"53452517"},
+    { id:"53452543", key:"m77", round:"r32", kickoff:"2026-06-30T21:00:00Z", stage:"Round of 32", slots:[team("France","FRA"), team("Sweden","SWE")], next:"53452509"},
+    { id:"53452563", key:"m79", round:"r32", kickoff:"2026-07-01T01:00:00Z", stage:"Round of 32", slots:[team("Mexico","MEX"), team("Ecuador","ECU")], next:"53452519"},
+    { id:"53452565", key:"m80", round:"r32", kickoff:"2026-07-01T16:00:00Z", stage:"Round of 32", slots:[team("England","ENG"), team("DR Congo","COD")], next:"53452519"},
+    { id:"53452555", key:"m82", round:"r32", kickoff:"2026-07-01T20:00:00Z", stage:"Round of 32", slots:[team("Belgium","BEL"), team("Senegal","SEN")], next:"53452515"},
+    { id:"53452553", key:"m81", round:"r32", kickoff:"2026-07-02T00:00:00Z", stage:"Round of 32", slots:[team("United States","USA"), team("Bosnia and Herzegovina","BIH")], next:"53452515"},
+    { id:"53452551", key:"m84", round:"r32", kickoff:"2026-07-02T19:00:00Z", stage:"Round of 32", slots:[team("Spain","ESP"), team("Austria","AUT")], next:"53452513"},
+    { id:"53452549", key:"m83", round:"r32", kickoff:"2026-07-02T23:00:00Z", stage:"Round of 32", slots:[team("Portugal","POR"), team("Croatia","CRO")], next:"53452513"},
+    { id:"53452505", key:"m85", round:"r32", kickoff:"2026-07-03T03:00:00Z", stage:"Round of 32", slots:[team("Switzerland","SUI"), team("Algeria","DZA")], next:"53452523"},
+    { id:"53452503", key:"m88", round:"r32", kickoff:"2026-07-03T18:00:00Z", stage:"Round of 32", slots:[team("Australia","AUS"), team("Egypt","EGY")], next:"53452521"},
+    { id:"53452569", key:"m86", round:"r32", kickoff:"2026-07-03T22:00:00Z", stage:"Round of 32", slots:[team("Argentina","ARG"), team("Cape Verde","CPV")], next:"53452521"},
+    { id:"53452507", key:"m87", round:"r32", kickoff:"2026-07-04T01:30:00Z", stage:"Round of 32", slots:[team("Colombia","COL"), team("Ghana","GHA")], next:"53452523"},
+
+    { id:"53452511", key:"m89", round:"r16", kickoff:"2026-07-04T17:00:00Z", stage:"Round of 16", slots:[from("53452545"), from("53452547")], next:"53452525"},
+    { id:"53452509", key:"m90", round:"r16", kickoff:"2026-07-04T21:00:00Z", stage:"Round of 16", slots:[from("53452541"), from("53452543")], next:"53452525"},
+    { id:"53452517", key:"m91", round:"r16", kickoff:"2026-07-05T20:00:00Z", stage:"Round of 16", slots:[from("53452557"), from("53452561")], next:"53452529"},
+    { id:"53452519", key:"m92", round:"r16", kickoff:"2026-07-06T00:00:00Z", stage:"Round of 16", slots:[from("53452563"), from("53452565")], next:"53452529"},
+    { id:"53452513", key:"m93", round:"r16", kickoff:"2026-07-06T19:00:00Z", stage:"Round of 16", slots:[from("53452549"), from("53452551")], next:"53452527"},
+    { id:"53452515", key:"m94", round:"r16", kickoff:"2026-07-07T00:00:00Z", stage:"Round of 16", slots:[from("53452553"), from("53452555")], next:"53452527"},
+    { id:"53452521", key:"m95", round:"r16", kickoff:"2026-07-07T16:00:00Z", stage:"Round of 16", slots:[from("53452569"), from("53452503")], next:"53452531"},
+    { id:"53452523", key:"m96", round:"r16", kickoff:"2026-07-07T20:00:00Z", stage:"Round of 16", slots:[from("53452505"), from("53452507")], next:"53452531"},
+
+    { id:"53452525", key:"m97", round:"qf", kickoff:"2026-07-09T20:00:00Z", stage:"Quarterfinal", slots:[from("53452511"), from("53452509")], next:"53452533"},
+    { id:"53452527", key:"m98", round:"qf", kickoff:"2026-07-10T19:00:00Z", stage:"Quarterfinal", slots:[from("53452513"), from("53452515")], next:"53452533"},
+    { id:"53452529", key:"m99", round:"qf", kickoff:"2026-07-11T21:00:00Z", stage:"Quarterfinal", slots:[from("53452517"), from("53452519")], next:"53452535"},
+    { id:"53452531", key:"m100", round:"qf", kickoff:"2026-07-12T01:00:00Z", stage:"Quarterfinal", slots:[from("53452521"), from("53452523")], next:"53452535"},
+
+    { id:"53452533", key:"m101", round:"sf", kickoff:"2026-07-14T19:00:00Z", stage:"Semifinal", slots:[from("53452525"), from("53452527")], next:"53452537", loserNext:"53452539"},
+    { id:"53452535", key:"m102", round:"sf", kickoff:"2026-07-15T19:00:00Z", stage:"Semifinal", slots:[from("53452529"), from("53452531")], next:"53452537", loserNext:"53452539"},
+
+    { id:"53452539", key:"m103", round:"finals", kickoff:"2026-07-18T21:00:00Z", stage:"Third-place playoff", slots:[loserFrom("53452533"), loserFrom("53452535")]},
+    { id:"53452537", key:"m104", round:"finals", kickoff:"2026-07-19T19:00:00Z", stage:"Final", slots:[from("53452533"), from("53452535")]}
+  ];
+
+  const quarters = [
+    { title: "Quarter 1", subtitle: "Canada / Netherlands-Morocco / Germany-France side", r32:["53452545","53452547","53452541","53452543"], r16:["53452511","53452509"], qf:"53452525" },
+    { title: "Quarter 2", subtitle: "Portugal-Spain / USA-Belgium side", r32:["53452549","53452551","53452553","53452555"], r16:["53452513","53452515"], qf:"53452527" },
+    { title: "Quarter 3", subtitle: "Brazil-Japan / Mexico-England side", r32:["53452557","53452561","53452563","53452565"], r16:["53452517","53452519"], qf:"53452529" },
+    { title: "Quarter 4", subtitle: "Argentina-Colombia side", r32:["53452569","53452503","53452505","53452507"], r16:["53452521","53452523"], qf:"53452531" }
+  ];
+
+  let matches = [];
+  let byId = new Map();
+
+  function team(name, abbr) { return { type:"team", name, abbr }; }
+  function from(matchId) { return { type:"winner", matchId }; }
+  function loserFrom(matchId) { return { type:"loser", matchId }; }
+
+  function resetMatches() {
+    matches = baseMatches.map(m => structuredClone(m));
+    byId = new Map(matches.map(m => [m.id, m]));
+    for (const m of matches) {
+      m.state = "pre"; m.detail = "Scheduled"; m.scores = [null, null]; m.source = "snapshot";
+      m.winnerIndex = undefined; m.winnerTeam = undefined; m.loserTeam = undefined;
+      m.predictedWinnerIndex = undefined; m.predictedWinnerTeam = undefined; m.prediction = undefined;
+      if (m.fallback) applyFallback(m);
+    }
+  }
+
+  function applyFallback(m) {
+    m.state = m.fallback.state; m.detail = m.fallback.detail; m.scores = m.fallback.scores;
+    const resolved = m.slots.map(resolveOfficialSlot);
+    const winnerIndex = resolved.findIndex(t => norm(t.name) === norm(m.fallback.winner));
+    if (winnerIndex >= 0) setOfficialWinner(m, winnerIndex);
+  }
+
+  function setOfficialWinner(m, idx) {
+    m.winnerIndex = idx;
+    m.winnerTeam = resolveOfficialSlot(m.slots[idx]);
+    m.loserTeam = resolveOfficialSlot(m.slots[1 - idx]);
+  }
+
+  function norm(value) {
+    let s = String(value || "").toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9 ]+/g, " ")
+      .replace(/\s+/g, " ").trim();
+    return nameAliases.get(s) || s;
+  }
+
+  function pairKey(a, b) { return [norm(a), norm(b)].sort().join("|"); }
+  function getRating(teamObj) { return eloRatings[norm(teamObj?.name)]; }
+  function pct(x) { return `${Math.round(x * 100)}%`; }
+
+  function formatDate(iso, options={}) {
+    const d = new Date(iso);
+    return new Intl.DateTimeFormat(undefined, {
+      weekday: options.short ? "short" : "long", month: "short", day: "numeric",
+      hour: "numeric", minute: "2-digit", timeZoneName: options.tz ? "short" : undefined
+    }).format(d);
+  }
+
+  function resolveOfficialSlot(slot) {
+    if (slot.type === "team") return { name: slot.name, abbr: slot.abbr, projected: false };
+    const src = byId.get(slot.matchId);
+    if (!src) return { name: "TBD", abbr: "TBD", projected: false };
+    if (slot.type === "winner" && src.winnerTeam) return { ...src.winnerTeam, projected: false };
+    if (slot.type === "loser" && src.loserTeam) return { ...src.loserTeam, projected: false };
+    const participants = src.slots.map(resolveOfficialSlot).map(t => t.abbr || t.name).join(" / ");
+    return { name: `${slot.type === "loser" ? "Loser" : "Winner"} of ${participants}`, abbr: "TBD", projected: false, placeholder: true };
+  }
+
+  function resolveProjectedSlot(slot) {
+    if (slot.type === "team") return { name: slot.name, abbr: slot.abbr, projected: false };
+    const src = byId.get(slot.matchId);
+    if (!src) return { name: "TBD", abbr: "TBD", projected: true, placeholder: true };
+    if (slot.type === "winner") {
+      if (src.winnerTeam) return { ...src.winnerTeam, projected: false };
+      if (src.predictedWinnerTeam) return { ...src.predictedWinnerTeam, projected: true };
+    }
+    if (slot.type === "loser") {
+      if (src.loserTeam) return { ...src.loserTeam, projected: false };
+      if (src.prediction?.teams?.length === 2 && Number.isInteger(src.predictedWinnerIndex)) return { ...src.prediction.teams[1 - src.predictedWinnerIndex], projected: true };
+    }
+    const participants = src.slots.map(resolveProjectedSlot).map(t => t.abbr || t.name).join(" / ");
+    return { name: `${slot.type === "loser" ? "Loser" : "Winner"} of ${participants}`, abbr: "TBD", projected: true, placeholder: true };
+  }
+
+  function eloProbability(teamA, teamB) {
+    const ra = getRating(teamA), rb = getRating(teamB);
+    if (!Number.isFinite(ra) || !Number.isFinite(rb)) return null;
+    const pA = 1 / (1 + Math.pow(10, -(ra - rb) / 400));
+    return { pA, pB: 1 - pA, diff: ra - rb, ra, rb };
+  }
+
+  function computePredictions() {
+    for (const m of matches) {
+      const teams = m.slots.map(resolveProjectedSlot);
+      const prob = teams.length === 2 && !teams.some(t => t.placeholder) ? eloProbability(teams[0], teams[1]) : null;
+      if (!prob) continue;
+      const idx = prob.pA >= prob.pB ? 0 : 1;
+      m.predictedWinnerIndex = idx;
+      m.predictedWinnerTeam = { name: teams[idx].name, abbr: teams[idx].abbr };
+      m.prediction = {
+        teams,
+        winner: teams[idx],
+        winnerIndex: idx,
+        pWinner: Math.max(prob.pA, prob.pB),
+        diff: idx === 0 ? prob.diff : -prob.diff,
+        ra: prob.ra,
+        rb: prob.rb,
+        source: ELO_SOURCE_LABEL,
+        external: sourceModelProgress[pairKey(teams[0].name, teams[1].name)]
+      };
+    }
+  }
+
+  function findMatchForEvent(event) {
+    const direct = byId.get(String(event.id));
+    if (direct) return direct;
+    const uidDigits = String(event.uid || "").match(/(\d{6,})$/)?.[1];
+    if (uidDigits && byId.has(uidDigits)) return byId.get(uidDigits);
+    const comp = event.competitions?.[0];
+    const names = (comp?.competitors || []).map(c => norm(c.team?.displayName || c.team?.name || c.team?.shortDisplayName || c.team?.abbreviation));
+    if (names.length < 2) return null;
+    const eventTime = new Date(event.date || comp?.date || 0).getTime();
+    return matches.find(m => {
+      const slotNames = m.slots.map(resolveProjectedSlot).map(t => norm(t.name));
+      const sameTeams = names.every(n => slotNames.includes(n)) && slotNames.every(n => names.includes(n));
+      const closeTime = Math.abs(new Date(m.kickoff).getTime() - eventTime) < 42 * 60 * 60 * 1000;
+      return sameTeams && closeTime;
+    }) || null;
+  }
+
+  function ingestESPNEvent(event) {
+    const match = findMatchForEvent(event);
+    if (!match) return;
+    const comp = event.competitions?.[0];
+    const competitors = comp?.competitors || [];
+    if (competitors.length < 2) return;
+    const ordered = competitors.slice().sort((a, b) => {
+      const ma = match.slots.map(resolveProjectedSlot).findIndex(t => norm(t.name) === norm(a.team?.displayName || a.team?.name || a.team?.shortDisplayName || a.team?.abbreviation));
+      const mb = match.slots.map(resolveProjectedSlot).findIndex(t => norm(t.name) === norm(b.team?.displayName || b.team?.name || b.team?.shortDisplayName || b.team?.abbreviation));
+      return (ma < 0 ? 99 : ma) - (mb < 0 ? 99 : mb);
+    });
+    const status = event.status || comp.status || {};
+    const type = status.type || {};
+    match.state = type.state || (type.completed ? "post" : "pre");
+    match.detail = type.shortDetail || type.detail || type.description || "Scheduled";
+    match.source = "live";
+    match.espnLink = event.links?.[0]?.href || null;
+    match.scores = ordered.map(c => c.score === undefined || c.score === null || c.score === "" ? null : Number(c.score));
+    ordered.forEach((c, i) => {
+      const displayName = c.team?.displayName || c.team?.name || c.team?.shortDisplayName || c.team?.abbreviation;
+      const abbr = c.team?.abbreviation || c.team?.shortDisplayName || displayName;
+      if (match.slots[i]?.type === "team") { match.slots[i].name = displayName; match.slots[i].abbr = abbr; }
+    });
+    const winnerIndex = ordered.findIndex(c => c.winner === true);
+    if (winnerIndex >= 0) setOfficialWinner(match, winnerIndex);
+    else if ((type.completed || match.state === "post") && match.scores.every(s => Number.isFinite(s)) && match.scores[0] !== match.scores[1]) {
+      setOfficialWinner(match, match.scores[0] > match.scores[1] ? 0 : 1);
+    }
+  }
+
+  async function fetchScoreboardData() {
+    const sources = [
+      { label: "GitHub cached scoreboard", url: LOCAL_SCOREBOARD_URL },
+      { label: "ESPN direct scoreboard", url: ESPN_SCOREBOARD_URL }
+    ];
+    let lastError = null;
+    for (const src of sources) {
+      try {
+        const sep = src.url.includes("?") ? "&" : "?";
+        const response = await fetch(`${src.url}${sep}_=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`${src.label} HTTP ${response.status}`);
+        const data = await response.json();
+        if (!Array.isArray(data.events) || data.events.length === 0) throw new Error(`${src.label} had no events`);
+        return { data, label: src.label };
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    throw lastError || new Error("No scoreboard source responded");
+  }
+
+  async function loadData() {
+    resetMatches();
+    const statusEl = document.getElementById("dataStatus");
+    try {
+      statusEl.textContent = "Refreshing live data…";
+      const { data, label } = await fetchScoreboardData();
+      (data.events || []).forEach(ingestESPNEvent);
+      computePredictions();
+      render(`${label} check: ${new Date().toLocaleString()}`);
+    } catch (err) {
+      computePredictions();
+      render(`Using fallback snapshot — live refresh failed: ${err.message}`, true);
+    }
+  }
+
+  function render(message, isError=false) {
+    const statusEl = document.getElementById("dataStatus");
+    statusEl.innerHTML = `<span class="${isError ? "error" : ""}">${escapeHtml(message)}</span>`;
+    document.getElementById("tzLabel").textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || "browser timezone";
+    renderUpcoming(); renderQuarters(); renderFinals(); renderPathSummary();
+  }
+
+  function renderUpcoming() {
+    const now = Date.now();
+    const upcoming = matches
+      .filter(m => !(m.state === "post") && new Date(m.kickoff).getTime() >= now - 3 * 60 * 60 * 1000)
+      .sort((a,b) => new Date(a.kickoff) - new Date(b.kickoff))
+      .slice(0, 10);
+    const el = document.getElementById("upcoming");
+    if (!upcoming.length) { el.innerHTML = `<div class="empty">No upcoming matches found in the embedded knockout schedule.</div>`; return; }
+    el.innerHTML = upcoming.map(m => {
+      const teams = m.slots.map(resolveProjectedSlot);
+      const live = m.state === "in";
+      const score = m.scores.every(s => s !== null) ? `${m.scores[0]}–${m.scores[1]}` : "";
+      const pred = m.prediction ? `${m.prediction.winner.name} ${pct(m.prediction.pWinner)}` : "No ELO pick yet";
+      const statusText = live ? (score || "LIVE") : "SCHEDULED";
+      return `<article class="upcoming-card">
+        <div class="match-time">${escapeHtml(formatDate(m.kickoff, {tz:true}))}</div>
+        <div class="match-title"><span>${escapeHtml(teams[0].name)} vs ${escapeHtml(teams[1].name)}</span><span class="${live ? "live" : ""}">${escapeHtml(statusText)}</span></div>
+        <div class="match-meta">${escapeHtml(m.stage)} · <span class="pred-label">ELO:</span> ${escapeHtml(pred)}${m.espnLink ? ` · <a href="${escapeAttr(m.espnLink)}" target="_blank" rel="noopener">Match center</a>` : ""}</div>
+      </article>`;
+    }).join("");
+  }
+
+  function renderQuarters() {
+    document.getElementById("quarters").innerHTML = quarters.map(q => `
+      <div class="quarter">
+        <div class="quarter-title"><strong>${escapeHtml(q.title)}</strong><span class="small">${escapeHtml(q.subtitle)}</span></div>
+        <div class="tree">
+          <div class="tree-col r32"><h4>Round of 32</h4>${q.r32.map(id => renderGame(byId.get(id))).join("")}</div>
+          <div class="tree-col r16"><h4>Round of 16</h4>${q.r16.map(id => renderGame(byId.get(id))).join("")}</div>
+          <div class="tree-col qf"><h4>Quarterfinal</h4>${renderGame(byId.get(q.qf))}<div class="connector-note">Winner feeds the semifinal tree below.</div></div>
+        </div>
+      </div>`).join("");
+  }
+
+  function renderFinals() {
+    const sf1 = byId.get("53452533"), sf2 = byId.get("53452535"), third = byId.get("53452539"), final = byId.get("53452537");
+    document.getElementById("finals").innerHTML = `
+      <div class="panel section-inner semi-col"><h3>Semifinal side A</h3>${renderGame(sf1)}</div>
+      <div class="panel section-inner final-col"><h3>Final / third place</h3>${renderGame(final)}${renderGame(third)}</div>
+      <div class="panel section-inner semi-col"><h3>Semifinal side B</h3>${renderGame(sf2)}</div>`;
+  }
+
+  function renderPathSummary() {
+    const final = byId.get("53452537");
+    const champion = final?.winnerTeam || final?.predictedWinnerTeam;
+    const leftSemi = byId.get("53452533")?.predictedWinnerTeam || byId.get("53452533")?.winnerTeam;
+    const rightSemi = byId.get("53452535")?.predictedWinnerTeam || byId.get("53452535")?.winnerTeam;
+    const finalProb = final?.prediction ? pct(final.prediction.pWinner) : "n/a";
+    const topSeeds = matches.filter(m => m.round === "qf").map(m => m.predictedWinnerTeam?.name).filter(Boolean).join(" · ");
+    document.getElementById("pathSummary").innerHTML = `
+      <strong>Current ELO-projected champion:</strong> ${escapeHtml(champion?.name || "TBD")} ${final?.state === "post" ? "(official)" : `(final-match ELO edge ${escapeHtml(finalProb)})`}<br>
+      <strong>Projected finalists:</strong> ${escapeHtml(leftSemi?.name || "TBD")} vs ${escapeHtml(rightSemi?.name || "TBD")}<br>
+      <strong>Projected semifinalists:</strong> ${escapeHtml(topSeeds || "TBD")}<br>
+      <span class="small">Projection updates after ESPN results are ingested. Official winners override ELO picks.</span>`;
+  }
+
+  function renderGame(m) {
+    if (!m) return "";
+    const teams = m.slots.map(resolveProjectedSlot);
+    const isFinal = m.state === "post";
+    const isLive = m.state === "in";
+    const statusClass = isLive ? "live" : isFinal ? "final" : "";
+    const statusText = isLive ? "LIVE" : isFinal ? "FINAL" : "SCHEDULED";
+    const cardClass = isLive ? "live-game" : isFinal ? "final-game" : m.prediction ? "projected-game" : "";
+    const score = idx => m.scores?.[idx] !== null && m.scores?.[idx] !== undefined ? m.scores[idx] : "";
+    const h2h = getH2H(teams[0], teams[1]);
+    return `<article class="game ${cardClass}">
+      <div class="kicker"><span>${escapeHtml(m.stage)}</span><span>${escapeHtml(formatDate(m.kickoff, {short:true}))}</span></div>
+      ${[0,1].map(i => {
+        const officialWin = m.winnerIndex === i;
+        const predWin = !isFinal && m.predictedWinnerIndex === i;
+        const cls = ["team", officialWin ? "official-winner" : "", predWin ? "predicted-winner" : "", teams[i]?.projected ? "projected" : ""].join(" ");
+        return `<div class="${cls}"><span class="name">${escapeHtml(teams[i]?.name || "TBD")}</span><span class="score">${escapeHtml(score(i))}</span></div>`;
+      }).join("")}
+      <div class="status"><span class="${statusClass}">${escapeHtml(statusText)}</span><span class="small">${escapeHtml(m.source === "live" ? "ESPN" : "fallback")}</span></div>
+      ${renderElo(m)}
+      ${h2h ? `<div class="h2h"><strong>Recent H2H:</strong> ${h2h.url ? `<a href="${escapeAttr(h2h.url)}" target="_blank" rel="noopener">${escapeHtml(h2h.text)}</a>` : escapeHtml(h2h.text)}</div>` : `<div class="h2h"><strong>Recent H2H:</strong> none found in the embedded last-four-years scan.</div>`}
+    </article>`;
+  }
+
+  function renderElo(m) {
+    if (!m.prediction) return `<div class="elo"><span class="small">No ELO pick yet; waiting for both projected teams.</span></div>`;
+    const p = m.prediction;
+    const teams = p.teams;
+    const width = Math.max(3, Math.min(97, Math.round(p.pWinner * 100)));
+    const ratingsText = `${teams[0].name} ${p.ra} · ${teams[1].name} ${p.rb}`;
+    const label = m.state === "post" ? "Pre-match ELO pick" : "ELO pick";
+    return `<div class="elo">
+      <strong>${escapeHtml(label)}:</strong> ${escapeHtml(p.winner.name)} ${escapeHtml(pct(p.pWinner))} <span class="small">ΔELO ${p.diff >= 0 ? "+" : ""}${escapeHtml(Math.round(p.diff))}</span><br>
+      <span class="small">${escapeHtml(ratingsText)}${p.external ? ` · ${escapeHtml(p.external)}` : ""}</span>
+      <div class="probbar" title="${escapeAttr(p.winner.name)} ${pct(p.pWinner)}"><span style="width:${width}%"></span></div>
+    </div>`;
+  }
+
+  function getH2H(a, b) {
+    if (!a || !b || a.placeholder || b.placeholder) return null;
+    return recentH2H.get(pairKey(a.name, b.name));
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>'"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
+  }
+  function escapeAttr(value) { return escapeHtml(value).replace(/`/g, "&#96;"); }
+
+  document.getElementById("refreshBtn").addEventListener("click", loadData);
+  resetMatches(); computePredictions(); render("Loading…"); loadData(); setInterval(loadData, TWO_HOURS_MS);
+})();
+</script>
+</body>
+</html>
