@@ -1,4 +1,6 @@
-# World Cup 2026 Live ELO Bracket
+# World Cup 2026 Live Bracket
+
+By W. Gray-Roncal · <willgray@gmail.com>
 
 A single-file, static GitHub Pages site for the World Cup 2026 knockout bracket:
 

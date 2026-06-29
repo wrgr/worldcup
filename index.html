@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>World Cup 2026 Live ELO Decision-Tree Bracket</title>
+  <title>World Cup 2026 Live Bracket</title>
   <style>
     :root {
       --bg: #07111f;
@@ -46,6 +46,8 @@
       backdrop-filter: blur(12px);
     }
     h1 { margin: 0 0 8px; font-size: clamp(28px, 4.2vw, 52px); letter-spacing: -.045em; line-height: .97; }
+    .byline { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+    .byline a { color: var(--accent2); }
     .subhead { color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; line-height: 1.4; }
     .pill {
       display: inline-flex; align-items: center; gap: 7px;
@@ -53,6 +55,8 @@
       color: var(--text); border-radius: 999px; padding: 7px 10px; font-size: 13px; white-space: nowrap;
     }
     .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 16px var(--accent); }
+    #tzPicker { background: rgba(255,255,255,.08); color: var(--text); border: 1px solid rgba(255,255,255,.16); border-radius: 8px; padding: 3px 6px; font: inherit; font-size: 13px; }
+    #tzPicker option { color: #111; }
     button {
       border: 0; background: var(--accent); color: #042018; padding: 9px 13px; border-radius: 999px;
       font-weight: 850; cursor: pointer; box-shadow: 0 10px 30px rgba(85,214,190,.16);
@@ -78,10 +82,10 @@
     .match-meta, .source-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
     .empty { color: var(--muted); padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
     .bracket-shell { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
-    .scroll-hint { display: none; color: var(--faint); font-size: 12px; padding: 0 16px 4px; }
-    @media (max-width: 1050px) { .scroll-hint { display: block; } }
+    #bracketScale { transform-origin: top left; width: max-content; }
+    .scroll-hint { display: none; color: var(--faint); font-size: 12px; padding: 0 16px 6px; }
     .quarters {
-      display: grid; grid-template-columns: repeat(2, minmax(690px, 1fr)); gap: 16px; min-width: 1420px;
+      display: grid; grid-template-columns: repeat(2, minmax(540px, 1fr)); gap: 16px; min-width: 1100px;
     }
     .quarter {
       background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 14px;
@@ -90,21 +94,27 @@
     .quarter-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
     .quarter-title strong { font-size: 15px; letter-spacing: -.01em; }
     .tree {
-      display: grid; grid-template-columns: 1.22fr 1.02fr .96fr; gap: 22px; align-items: stretch; position: relative;
+      display: grid; grid-template-columns: 1.22fr 1.02fr .96fr; gap: 14px; align-items: stretch; position: relative;
     }
-    .tree-col { display: grid; gap: 12px; align-content: center; }
-    .tree-col.r32 { grid-template-rows: repeat(4, minmax(116px, auto)); }
-    .tree-col.r16 { grid-template-rows: repeat(2, minmax(150px, auto)); }
-    .tree-col.qf { grid-template-rows: minmax(210px, auto); }
+    .tree-col { display: grid; gap: 10px; align-content: center; }
+    .tree-col.r32 { grid-template-rows: repeat(4, minmax(72px, auto)); }
+    .tree-col.r16 { grid-template-rows: repeat(2, minmax(92px, auto)); }
+    .tree-col.qf { grid-template-rows: minmax(110px, auto); }
     .connector-note { color: var(--faint); font-size: 11px; margin-top: 8px; }
-    .finals-wrap { margin-top: 20px; display: grid; grid-template-columns: 1fr minmax(320px, 520px) 1fr; gap: 16px; min-width: 1120px; }
+    .finals-wrap { margin-top: 18px; display: grid; grid-template-columns: 1fr minmax(280px, 460px) 1fr; gap: 14px; min-width: 980px; }
     .semi-col { display: grid; gap: 14px; align-content: center; }
     .final-col { display: grid; gap: 14px; align-content: center; }
     .game {
       border: 1px solid rgba(255,255,255,.10);
       background: linear-gradient(180deg, var(--card), var(--card2));
-      border-radius: 14px; padding: 10px; min-height: 112px; position: relative; overflow: hidden;
+      border-radius: 14px; padding: 9px 10px; position: relative; overflow: hidden; cursor: pointer;
     }
+    .game .detail { display: none; }
+    .game.expanded .detail { display: block; }
+    .game .chev { color: var(--faint); font-size: 11px; transition: transform .15s; display: inline-block; }
+    .game.expanded .chev { transform: rotate(90deg); }
+    .team.implied-winner { background: rgba(185,156,255,.13); color: #fbf8ff; font-weight: 850; box-shadow: inset 0 0 0 1px rgba(185,156,255,.4); }
+    .game.implied-game { border-color: rgba(185,156,255,.4); }
     .game::after {
       content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: rgba(255,255,255,.08);
     }
@@ -163,20 +173,39 @@
       header { position: static; }
       body { background: #fff; color: #111; }
       section, .panel, .quarter, .game { box-shadow: none; background: #fff; border-color: #bbb; }
-      .bracket-shell { overflow: visible; }
+      .bracket-shell { overflow: visible; height: auto !important; }
+      #bracketScale { transform: none !important; width: auto !important; }
+      .game .detail { display: block !important; }
       .quarters, .finals-wrap { min-width: 0; }
     }
   </style>
 </head>
 <body>
 <header>
-  <h1>World Cup 2026 Live ELO Decision-Tree Bracket</h1>
+  <h1>World Cup 2026 Live Bracket</h1>
+  <p class="byline">By <a href="mailto:willgray@gmail.com">W. Gray-Roncal</a></p>
   <div class="subhead">
     <span class="pill"><span class="dot" id="liveDot"></span><span id="liveLabel">Loading…</span></span>
     <span class="pill">Auto-refresh: every 2 hours</span>
     <span class="pill" title="When live data was last successfully retrieved">Last updated: <span id="lastUpdated">—</span></span>
     <span class="pill">ELO predictions recompute after each result</span>
-    <span class="pill">Times: <span id="tzLabel">browser timezone</span></span>
+    <span class="pill">Times:
+      <select id="tzPicker" title="Choose a timezone for all kickoff times">
+        <option value="">Browser default</option>
+        <option value="UTC">UTC</option>
+        <option value="America/Los_Angeles">Los Angeles (PT)</option>
+        <option value="America/Denver">Denver (MT)</option>
+        <option value="America/Mexico_City">Mexico City (CT)</option>
+        <option value="America/Chicago">Chicago (CT)</option>
+        <option value="America/New_York">New York (ET)</option>
+        <option value="America/Toronto">Toronto (ET)</option>
+        <option value="America/Sao_Paulo">São Paulo</option>
+        <option value="Europe/London">London</option>
+        <option value="Europe/Paris">Paris / Madrid</option>
+        <option value="Africa/Casablanca">Casablanca</option>
+        <option value="Asia/Tokyo">Tokyo</option>
+        <option value="Australia/Sydney">Sydney</option>
+      </select>
     <button id="refreshBtn" type="button">Refresh now</button>
     <button id="predictBtn" type="button" class="secondary">Predict mode: off</button>
     <button id="recentBtn" type="button" class="secondary">Recent data: off</button>
@@ -210,22 +239,10 @@
         <div class="legend">
           <span>Green = official winner</span>
           <span>Purple = ELO projected winner</span>
-          <span>H2H = senior full internationals found since 2022-06-29</span>
+          <span>Teal = your pick · dashed purple = implied by a later pick</span>
+          <span>H2H = meetings incl. friendlies since 2021-06-29 (~5 yrs)</span>
         </div>
-        <details>
-          <summary>Model and source notes</summary>
-          <div class="model-card">
-            <strong>Prediction layer:</strong> each unresolved match uses the embedded ELO table and the standard logistic transform <code>1/(1+10^(-ΔELO/400))</code>. It ignores injuries, rest, travel, home advantage, styles, and penalty-specific skill unless already reflected in the rating.
-          </div>
-          <p class="source-note">
-            <strong>Live layer:</strong> the page first reads <code>scoreboard.json</code> committed to the repo root. If that file is missing or stale, it tries ESPN's public World Cup scoreboard feed directly in the browser. If both fetches fail, it falls back to the embedded knockout snapshot. Official fixtures/results should be checked against FIFA's fixture page.
-          </p>
-          <ul class="source-list source-note">
-            <li><a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums" target="_blank" rel="noopener">FIFA official schedule / results</a></li>
-            <li><a href="https://www.espn.com/soccer/scoreboard/_/league/fifa.world" target="_blank" rel="noopener">ESPN World Cup scoreboard</a></li>
-            <li><a href="https://www.economicsobservatory.com/the-world-cup-2026-knockout-stages-begin-is-football-coming-home" target="_blank" rel="noopener">Economics Observatory last-32 ELO/probability table</a></li>
-          </ul>
-        </details>
+        <p class="small" style="margin-top:10px;">Tap any match to expand its ELO edge, betting market, cards, news, and head-to-head. Full sources are listed at the bottom of the page.</p>
       </div>
     </section>
     <section>
@@ -239,19 +256,38 @@
   <section style="margin-top:20px;">
     <div class="scroll-hint">← Scroll horizontally to see the full bracket →</div>
     <div class="bracket-shell">
-      <div id="quarters" class="quarters" aria-live="polite"></div>
-      <div id="finals" class="finals-wrap" aria-live="polite"></div>
+      <div id="bracketScale">
+        <div id="quarters" class="quarters" aria-live="polite"></div>
+        <div id="finals" class="finals-wrap" aria-live="polite"></div>
+      </div>
     </div>
   </section>
 
   <p class="source-note" id="statusNote" style="margin-top:20px;"></p>
+
+  <section id="sources" style="margin-top:18px;">
+    <div class="section-inner">
+      <h2>Sources &amp; methodology</h2>
+      <div class="model-card">
+        <strong>Predictions (ELO):</strong> each unresolved match uses the embedded ELO table and the logistic transform <code>1/(1+10^(-ΔELO/(400×upset)))</code>, where <em>upset</em> is the Upset-factor slider. It otherwise ignores injuries, rest, travel, home advantage, and styles except as reflected in the rating. Source: Economics Observatory 2026 knockout preview.
+      </div>
+      <p class="source-note"><strong>Betting market &amp; cards &amp; news:</strong> the Recent-data layer pulls DraftKings moneylines (converted to a “to advance” probability), yellow/red cards, and match/league news headlines from ESPN's public summary endpoint. With the layer on, the shown probability is <code>(1−w)·ELO + w·market</code>.</p>
+      <p class="source-note"><strong>Live scoreboard:</strong> the page first reads <code>scoreboard.json</code> from the repo, then ESPN's public World Cup scoreboard feed, then the embedded snapshot. Official fixtures/results should be checked against FIFA's page.</p>
+      <ul class="source-list source-note">
+        <li><a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums" target="_blank" rel="noopener">FIFA — official schedule / results</a></li>
+        <li><a href="https://www.espn.com/soccer/scoreboard/_/league/fifa.world" target="_blank" rel="noopener">ESPN — scoreboard, odds (DraftKings), cards &amp; news</a></li>
+        <li><a href="https://www.economicsobservatory.com/the-world-cup-2026-knockout-stages-begin-is-football-coming-home" target="_blank" rel="noopener">Economics Observatory — last-32 ELO / probability table</a></li>
+      </ul>
+    </div>
+  </section>
 </main>
 <script>
 (() => {
   const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
   const LOCAL_SCOREBOARD_URL = "scoreboard.json";
   const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260628-20260719&limit=250";
-  const CUTOFF = "2022-06-29";
+  const CUTOFF = "2021-06-29";
+  const H2H_FALLBACK = "No meeting found in the embedded scan since " + CUTOFF + " (includes friendlies).";
 
   const ELO_SOURCE_LABEL = "Economics Observatory 2026 knockout preview, published 2026-06-28";
   const eloRatings = {
@@ -295,7 +331,7 @@
 
   const recentH2H = new Map([
     [pairKey("Brazil", "Japan"), {
-      text: "Since " + CUTOFF + ": Japan beat Brazil 3–2 in an Oct 2025 friendly. Brazil also won 1–0 in Jun 2022, just outside the exact four-year cutoff.",
+      text: "Since " + CUTOFF + ": Japan beat Brazil 3–2 in an Oct 2025 friendly; Brazil won 1–0 in a Jun 2022 friendly.",
       url: "https://www.reuters.com/sports/soccer/japan-coach-vows-pick-penalty-shootout-takers-against-brazil-2026-06-28/"
     }],
     [pairKey("Mexico", "Ecuador"), {
@@ -307,15 +343,15 @@
       url: "https://www.uefa.com/news-media/video/028e-1b16e551991d-504e0b0b7f8d-1000--highlights-portugal-1-2-croatia/"
     }],
     [pairKey("United States", "Bosnia and Herzegovina"), {
-      text: "No senior full international found since " + CUTOFF + ". Last listed meetings: USA 1–0 Bosnia in Dec 2021, 0–0 in 2018, USA 4–3 in 2013.",
+      text: "Since " + CUTOFF + ": USA beat Bosnia & Herzegovina 1–0 in a Dec 2021 friendly. Earlier meetings: 0–0 in 2018, USA 4–3 in 2013.",
       url: "https://www.espn.co.uk/football/match/_/gameId/760494/bosnia-herzegovina-united-states"
     }],
     [pairKey("France", "Sweden"), {
-      text: "No senior full international found since " + CUTOFF + ". Their last listed meeting was Sweden 0–1 France in the 2020 Nations League.",
+      text: "No meeting found since " + CUTOFF + ", including friendlies; their last was Sweden 0–1 France in the 2020 Nations League.",
       url: "https://www.espn.com/soccer/match/_/gameId/570771/france-sweden"
     }],
     [pairKey("Netherlands", "Morocco"), {
-      text: "No senior full international found since " + CUTOFF + ". Their 2026 tie has a 1994 World Cup backstory rather than a recent H2H sample.",
+      text: "No meeting found since " + CUTOFF + ", including friendlies; their 2026 tie echoes a 1994 World Cup backstory rather than a recent sample.",
       url: "https://www.theguardian.com/football/2026/jun/28/street-football-on-world-stage-morocco-and-netherlands-face-off-in-last-32-game-with-a-backstory"
     }]
   ]);
@@ -379,6 +415,10 @@
   let recentLoading = false;
   const recentData = new Map();      // matchId -> { market, cards, news }
   const SUMMARY_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=";
+  let selectedTZ = "";               // "" = browser default, else IANA tz name
+  const expandedCards = new Set();   // matchIds whose detail is expanded
+  const implicitPicks = new Set();   // matchIds forced by a downstream explicit pick
+  let subtreeTeams = new Map();      // matchId -> Set of normalized team names that can reach it
 
   function team(name, abbr) { return { type:"team", name, abbr }; }
   function from(matchId) { return { type:"winner", matchId }; }
@@ -387,6 +427,7 @@
   function resetMatches() {
     matches = baseMatches.map(m => structuredClone(m));
     byId = new Map(matches.map(m => [m.id, m]));
+    buildSubtreeTeams();
     for (const m of matches) {
       m.state = "pre"; m.detail = "Scheduled"; m.scores = [null, null]; m.source = "snapshot";
       m.winnerIndex = undefined; m.winnerTeam = undefined; m.loserTeam = undefined;
@@ -417,6 +458,41 @@
     return nameAliases.get(s) || s;
   }
 
+  function buildSubtreeTeams() {
+    subtreeTeams = new Map();
+    const collect = (m) => {
+      if (subtreeTeams.has(m.id)) return subtreeTeams.get(m.id);
+      const set = new Set();
+      for (const slot of m.slots) {
+        if (slot.type === "team") set.add(norm(slot.name));
+        else { const f = byId.get(slot.matchId); if (f) for (const n of collect(f)) set.add(n); }
+      }
+      subtreeTeams.set(m.id, set);
+      return set;
+    };
+    for (const m of matches) collect(m);
+  }
+
+  // Matches a team must win on its way up to `startId` (descends the tree toward that team's leaf).
+  function impliedWinsFor(startId, xNorm) {
+    const out = [];
+    let m = byId.get(startId);
+    const guard = new Set();
+    while (m && !guard.has(m.id)) {
+      guard.add(m.id);
+      let feeder = null;
+      for (const slot of m.slots) {
+        if (slot.type !== "winner") continue;
+        const f = byId.get(slot.matchId);
+        if (f && subtreeTeams.get(f.id)?.has(xNorm)) { feeder = f; break; }
+      }
+      if (!feeder) break;
+      out.push(feeder.id);
+      m = feeder;
+    }
+    return out;
+  }
+
   function pairKey(a, b) { return [norm(a), norm(b)].sort().join("|"); }
   function getRating(teamObj) { return eloRatings[norm(teamObj?.name)]; }
   function pct(x) { return `${Math.round(x * 100)}%`; }
@@ -425,7 +501,9 @@
     const d = new Date(iso);
     return new Intl.DateTimeFormat(undefined, {
       weekday: options.short ? "short" : "long", month: "short", day: "numeric",
-      hour: "numeric", minute: "2-digit", timeZoneName: options.tz ? "short" : undefined
+      hour: "numeric", minute: "2-digit",
+      timeZone: selectedTZ || undefined,
+      timeZoneName: (options.tz || selectedTZ) ? "short" : undefined
     }).format(d);
   }
 
@@ -489,6 +567,7 @@
       if (picked) {
         const ui = teams.findIndex(t => !t.placeholder && norm(t.name) === picked);
         if (ui >= 0) { idx = ui; m.userPicked = true; }
+        else if (!teams.some(t => t.placeholder)) { userPicks.delete(m.id); }  // pick can no longer be true → remove
       }
       m.predictedWinnerIndex = idx;
       m.predictedWinnerTeam = { name: teams[idx].name, abbr: teams[idx].abbr };
@@ -506,6 +585,16 @@
         market,
         blended
       };
+    }
+    // A pick implies its team won every feeder on its path — flag those as implied (must-be-true).
+    implicitPicks.clear();
+    for (const [mid, name] of userPicks) {
+      for (const fid of impliedWinsFor(mid, norm(name))) {
+        if (!userPicks.has(fid)) implicitPicks.add(fid);
+      }
+    }
+    for (const m of matches) {
+      m.implied = m.winnerIndex === undefined && !m.userPicked && implicitPicks.has(m.id);
     }
   }
 
@@ -680,15 +769,38 @@
     if (liveLabel) liveLabel.textContent = isError ? "Live data offline" : "Live";
     const liveDot = document.getElementById("liveDot");
     if (liveDot) liveDot.style.background = isError ? "var(--warn)" : "var(--accent)";
-    document.getElementById("tzLabel").textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || "browser timezone";
     const updEl = document.getElementById("lastUpdated");
     if (updEl) {
       updEl.textContent = lastUpdated
-        ? `${lastUpdated.toLocaleString()}${lastUpdatedSource ? ` (${lastUpdatedSource})` : ""}`
+        ? `${lastUpdated.toLocaleString(undefined, selectedTZ ? { timeZone: selectedTZ } : {})}${lastUpdatedSource ? ` (${lastUpdatedSource})` : ""}`
         : "live fetch pending — showing snapshot";
     }
     renderUpcoming(); renderQuarters(); renderFinals(); renderPathSummary();
+    fitBracket();
   }
+
+  let fitScheduled = false;
+  function fitBracket() {
+    const shell = document.querySelector(".bracket-shell");
+    const inner = document.getElementById("bracketScale");
+    const hint = document.querySelector(".scroll-hint");
+    if (!shell || !inner) return;
+    inner.style.transform = "scale(1)";
+    shell.style.height = "";
+    const avail = shell.clientWidth - 32;            // 16px padding each side
+    const contentW = inner.scrollWidth;
+    let s = contentW > 0 ? avail / contentW : 1;
+    s = Math.max(0.5, Math.min(1, s));               // floor so it stays legible
+    inner.style.transform = `scale(${s})`;
+    const rect = inner.getBoundingClientRect();
+    shell.style.height = (rect.height + 32) + "px";
+    if (hint) hint.style.display = (contentW * s > avail + 1) ? "block" : "none";
+  }
+  window.addEventListener("resize", () => {
+    if (fitScheduled) return;
+    fitScheduled = true;
+    requestAnimationFrame(() => { fitScheduled = false; fitBracket(); });
+  });
 
   function renderUpcoming() {
     const now = Date.now();
@@ -772,24 +884,35 @@
     const isLive = m.state === "in";
     const statusClass = isLive ? "live" : isFinal ? "final" : "";
     const statusText = isLive ? "LIVE" : isFinal ? "FINAL" : "SCHEDULED";
-    const cardClass = isLive ? "live-game" : isFinal ? "final-game" : m.userPicked ? "user-game" : m.prediction ? "projected-game" : "";
+    const expanded = expandedCards.has(m.id);
+    const cardClass = [
+      isLive ? "live-game" : isFinal ? "final-game" : m.userPicked ? "user-game" : m.implied ? "implied-game" : m.prediction ? "projected-game" : "",
+      expanded ? "expanded" : ""
+    ].filter(Boolean).join(" ");
     const score = idx => m.scores?.[idx] !== null && m.scores?.[idx] !== undefined ? m.scores[idx] : "";
     const h2h = getH2H(teams[0], teams[1]);
-    return `<article class="game ${cardClass}">
-      <div class="kicker"><span>${escapeHtml(m.stage)}</span><span>${escapeHtml(formatDate(m.kickoff, {short:true}))}</span></div>
-      ${[0,1].map(i => {
-        const officialWin = m.winnerIndex === i;
-        const predWin = !isFinal && m.predictedWinnerIndex === i;
-        const userWin = predWin && m.userPicked;
-        const pickable = !isFinal && !teams[i]?.placeholder;
-        const cls = ["team", officialWin ? "official-winner" : "", userWin ? "user-picked" : predWin ? "predicted-winner" : "", teams[i]?.projected ? "projected" : ""].join(" ");
-        const pickAttrs = pickable ? ` data-pickable="1" data-match-id="${escapeAttr(m.id)}" data-team-name="${escapeAttr(teams[i]?.name || "")}"` : "";
-        return `<div class="${cls}"${pickAttrs}><span class="name">${escapeHtml(teams[i]?.name || "TBD")}</span><span class="score">${escapeHtml(score(i))}</span></div>`;
-      }).join("")}
-      <div class="status"><span class="${statusClass}">${escapeHtml(statusText)}</span><span class="small">${escapeHtml(m.source === "live" ? "ESPN" : "fallback")}</span></div>
-      ${renderElo(m)}
-      ${renderRecent(m)}
-      ${h2h ? `<div class="h2h"><strong>Recent H2H:</strong> ${h2h.url ? `<a href="${escapeAttr(h2h.url)}" target="_blank" rel="noopener">${escapeHtml(h2h.text)}</a>` : escapeHtml(h2h.text)}</div>` : `<div class="h2h"><strong>Recent H2H:</strong> none found in the embedded last-four-years scan.</div>`}
+    const teamsHtml = [0,1].map(i => {
+      const officialWin = m.winnerIndex === i;
+      const predWin = !isFinal && m.predictedWinnerIndex === i;
+      const userWin = predWin && m.userPicked;
+      const impliedWin = predWin && m.implied && !userWin;
+      const pickable = !isFinal && !teams[i]?.placeholder;
+      const cls = ["team", officialWin ? "official-winner" : "",
+        userWin ? "user-picked" : impliedWin ? "implied-winner" : predWin ? "predicted-winner" : "",
+        teams[i]?.projected ? "projected" : ""].join(" ");
+      const pickAttrs = pickable ? ` data-pickable="1" data-match-id="${escapeAttr(m.id)}" data-team-name="${escapeAttr(teams[i]?.name || "")}"` : "";
+      return `<div class="${cls}"${pickAttrs}><span class="name">${escapeHtml(teams[i]?.name || "TBD")}</span><span class="score">${escapeHtml(score(i))}</span></div>`;
+    }).join("");
+    const tag = m.userPicked ? `<span class="small pred-label">your pick</span>` : m.implied ? `<span class="small">implied</span>` : "";
+    return `<article class="game ${cardClass}" data-match-id="${escapeAttr(m.id)}">
+      <div class="kicker"><span>${escapeHtml(m.stage)} · ${escapeHtml(formatDate(m.kickoff, {short:true}))}</span><span class="chev">▸</span></div>
+      ${teamsHtml}
+      <div class="status"><span class="${statusClass}">${escapeHtml(statusText)}</span>${tag}</div>
+      <div class="detail">
+        ${renderElo(m)}
+        ${renderRecent(m)}
+        ${h2h ? `<div class="h2h"><strong>Recent H2H:</strong> ${h2h.url ? `<a href="${escapeAttr(h2h.url)}" target="_blank" rel="noopener">${escapeHtml(h2h.text)}</a>` : escapeHtml(h2h.text)}</div>` : `<div class="h2h"><strong>Recent H2H:</strong> ${escapeHtml(H2H_FALLBACK)}</div>`}
+      </div>
     </article>`;
   }
 
@@ -799,7 +922,7 @@
     const teams = p.teams;
     const width = Math.max(3, Math.min(97, Math.round(p.pWinner * 100)));
     const ratingsText = `${teams[0].name} ${p.ra} · ${teams[1].name} ${p.rb}`;
-    const label = m.state === "post" ? "Pre-match pick" : m.userPicked ? "Your pick" : p.blended ? "Blended pick" : "ELO pick";
+    const label = m.state === "post" ? "Pre-match pick" : m.userPicked ? "Your pick" : m.implied ? "Implied (forced by a later pick)" : p.blended ? "Blended pick" : "ELO pick";
     const blendNote = p.blended ? ` <span class="blend-tag">(ELO ${escapeHtml(pct(p.eloPWinner))} blended w/ market ${escapeHtml(pct(marketWeight))})</span>` : "";
     return `<div class="elo">
       <strong>${escapeHtml(label)}:</strong> ${escapeHtml(p.winner.name)} ${escapeHtml(pct(p.pWinner))} <span class="small">ΔELO ${p.diff >= 0 ? "+" : ""}${escapeHtml(Math.round(p.diff))}</span>${blendNote}<br>
@@ -890,16 +1013,29 @@
     document.getElementById("upsetVal").textContent = `${eloScaleFactor.toFixed(1)}×`;
     recompute();
   });
-  // Delegated click: in predict mode, clicking a team advances them (toggles off if already picked).
+  document.getElementById("tzPicker").addEventListener("change", (e) => {
+    selectedTZ = e.target.value;
+    recompute();
+  });
+  // Delegated click on the bracket: pick a winner (predict mode), else expand/collapse the card.
   document.querySelector("main").addEventListener("click", (e) => {
-    if (!predictMode) return;
+    if (e.target.closest("a")) return;                         // let links work normally
     const teamEl = e.target.closest('.team[data-pickable="1"]');
-    if (!teamEl) return;
-    const id = teamEl.getAttribute("data-match-id");
-    const picked = norm(teamEl.getAttribute("data-team-name"));
-    if (userPicks.get(id) === picked) userPicks.delete(id);
-    else userPicks.set(id, picked);
-    updatePickCount(); recompute();
+    if (predictMode && teamEl) {
+      const id = teamEl.getAttribute("data-match-id");
+      const picked = norm(teamEl.getAttribute("data-team-name"));
+      if (userPicks.get(id) === picked) userPicks.delete(id);   // toggle off
+      else userPicks.set(id, picked);                           // newest pick wins; stale ones pruned on recompute
+      updatePickCount(); recompute();
+      return;
+    }
+    const card = e.target.closest('.game[data-match-id]');
+    if (card) {
+      const id = card.getAttribute("data-match-id");
+      if (expandedCards.has(id)) expandedCards.delete(id);
+      else expandedCards.add(id);
+      recompute();
+    }
   });
 
   resetMatches(); computePredictions(); render("Loading…"); loadData(); setInterval(loadData, TWO_HOURS_MS);
