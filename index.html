@@ -113,10 +113,10 @@
     @media (max-width: 520px) { .brief-players { grid-template-columns: 1fr; } }
     .empty { color: var(--muted); padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
     .bracket-shell { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
-    #bracketScale { width: 100%; position: relative; }
+    #bracketScale { width: max-content; margin: 0 auto; position: relative; }
     #connectors { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 0; }
     .scroll-hint { display: none; color: var(--faint); font-size: 12px; padding: 0 16px 6px; }
-    .bracket { display: flex; align-items: stretch; justify-content: center; gap: 10px; padding: 4px; position: relative; z-index: 1; width: 100%; }
+    .bracket { display: flex; align-items: stretch; justify-content: flex-start; gap: 10px; padding: 4px; position: relative; z-index: 1; width: max-content; }
     .bcol { flex: 0 0 auto; display: flex; flex-direction: column; min-width: 104px; max-width: 156px; }
     .bcol > h4 { text-align: center; margin: 0 0 8px; font-size: 11px; }
     .bcol-body { flex: 1; display: flex; flex-direction: column; min-height: 560px; }
@@ -190,7 +190,13 @@
     .elo strong { color: var(--text); }
     .probbar { margin-top: 6px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
     .probbar > span { display: block; height: 100%; width: 50%; background: linear-gradient(90deg, var(--pred), var(--accent2)); border-radius: 999px; }
-    .h2h { margin-top: 7px; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+    .h2h { margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.4; border-top: 1px solid var(--line); padding-top: 8px; }
+    .h2h > strong { color: #d8e8ff; }
+    .h2h-all { margin-top: 3px; color: var(--text); }
+    .h2h-recent { margin-top: 2px; }
+    .h2h-k { color: #d8e8ff; font-weight: 700; }
+    .h2h-note { margin-top: 2px; font-style: italic; color: var(--accent2); }
+    .h2h-link { display: inline-block; margin-top: 4px; }
     .legend { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:14px; }
     .legend span { font-size: 12px; color: var(--muted); padding: 6px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); }
     details { margin-top: 14px; color: var(--muted); font-size: 13px; }
@@ -581,6 +587,27 @@
     ]}
   };
 
+  // Real head-to-head history per Round-of-32 matchup (researched; no time gating).
+  // Shown in the match popup alongside a link to the live AiScore record.
+  const MATCH_H2H = {
+    "53452557": { allTime:"Played 10 — Brazil 7 wins, Japan 1 win, 2 draws. Brazil have dominated, outscoring Japan roughly 29–9.", recent:"2025: Japan 3–2 (friendly); 2006 World Cup: Brazil 4–1 (group stage).", note:"Japan's 2025 friendly win was their first ever against Brazil after nine winless meetings." },
+    "53452541": { allTime:"Played 3 — Germany 1 win, Paraguay 1 win, 1 draw. An even, low-frequency rivalry.", recent:"2013: 3–3 (friendly); 2002 World Cup R16: Germany 1–0 (Neuville).", note:"Their only competitive meeting was a tight 2002 World Cup last-16 tie won by Germany." },
+    "53452547": { allTime:"Played 3 — Netherlands 2 wins, Morocco 1 win. The Dutch hold a narrow edge.", recent:"2017: Netherlands 2–1 (friendly); 1999: Morocco 2–1 (friendly).", note:"They met at the 1994 World Cup, the Netherlands winning 2–1 after Morocco led." },
+    "53452561": { allTime:"Never met before — no prior senior international meetings exist.", recent:"No previous meetings — this is their first-ever encounter.", note:"Norway have lost only twice in 19 all-time matches against African nations." },
+    "53452543": { allTime:"Met around 24 times, France clearly ahead (roughly 12 wins to Sweden's 6, with several draws).", recent:"2020 Nations League: France won 4–2 (Paris) and 1–0 (Solna).", note:"Their 2020 4–2 in Paris was a recent high-scoring clash; they haven't met competitively since." },
+    "53452563": { allTime:"Met around 28 times, Mexico dominant with roughly 17 wins to Ecuador's 4, plus several draws.", recent:"2025: 1–1 (friendly); 2024: 0–0 (Copa América); 2022: 0–0 (friendly).", note:"Their last three meetings all ended in draws despite Mexico's lopsided all-time edge." },
+    "53452565": { allTime:"Never met. This is the first-ever meeting between England and DR Congo.", recent:"No prior meetings of any kind.", note:"They had never been drawn together at a tournament or in a friendly." },
+    "53452555": { allTime:"Never met. This is the first-ever meeting between Belgium and Senegal.", recent:"No prior meetings of any kind.", note:"First-ever encounter between the two nations." },
+    "53452553": { allTime:"Played 3 (all friendlies) — USA 2 wins, 1 draw, Bosnia 0 wins.", recent:"2021 friendly: USA 1–0; 2018 friendly: 0–0; 2013 friendly: USA 4–3 (Sarajevo).", note:"2026 is their first-ever competitive meeting; Altidore hit a hat-trick in the 2013 4–3 win." },
+    "53452551": { allTime:"Played roughly 16 — Spain about 9 wins, Austria about 4 wins, 3 draws.", recent:"2009 friendly: Spain 5–1. Austria famously won 2–1 at the 1978 World Cup.", note:"Austria's most famous result is beating Spain 2–1 in the 1978 World Cup group stage." },
+    "53452549": { allTime:"Played 9 — Portugal 5 wins, Croatia 1 win, 3 draws (Portugal 15 goals, Croatia 8).", recent:"2024 friendly: Croatia 2–1, their only win; Portugal won most earlier meetings.", note:"Croatia have beaten Portugal just once in nine meetings, in June 2024." },
+    "53452505": { allTime:"Played just 2 (both 1980s friendlies) — Switzerland 2 wins, Algeria 0.", recent:"1986 friendly: Switzerland 2–0; 1983 friendly: Switzerland 2–1.", note:"2026 is their first competitive meeting; Algeria have never beaten Switzerland." },
+    "53452569": { allTime:"Never met before the 2026 World Cup — this Round-of-32 tie is their first meeting at any level.", recent:"No previous meetings.", note:"Cape Verde reached the knockouts on debut as one of the smallest nations ever to do so." },
+    "53452507": { allTime:"Very few meetings; the sides have rarely played, with Colombia holding the edge and no Ghana win.", recent:"Meetings have been sparse friendlies; recent scores aren't reliably documented.", note:"Their 2026 Round of 32 is effectively their first competitive clash." },
+    "53452503": { allTime:"Met just twice — Australia won a 1987 President's Cup tie on penalties; Egypt won a 2010 friendly 3–0.", recent:"2010 friendly in Cairo: Egypt 3–0 Australia.", note:"The 2026 Round of 32 is their first-ever competitive meeting." },
+    "53452545": { allTime:"Played 2 — South Africa 1 win, Canada 1 win (one friendly, one World Cup).", recent:"2026 World Cup: Canada 1–0 (Eustáquio, 90+2'); 2007 friendly: South Africa 2–0.", note:"Eustáquio's stoppage-time winner made Canada the first team into the 2026 last 16." }
+  };
+
   let matches = [];
   let byId = new Map();
   let predictMode = false;
@@ -677,9 +704,10 @@
   function getRating(teamObj) { return eloRatings[norm(teamObj?.name)]; }
   function pct(x) { return `${Math.round(x * 100)}%`; }
   // Projections (ELO auto-fill of likely winners) are shown only when explicitly requested:
-  // the Project button, while building a manual bracket in Predict mode, or when the
-  // Recent-data layer is on (so its market blend can visibly modify the probabilities/picks).
-  function showProjections() { return projectOn || predictMode || recentDataOn; }
+  // the Project button, or while building a manual bracket in Predict mode. The Recent-data
+  // layer does NOT force projections on (it blends into the probabilities that are already shown),
+  // so the Project toggle alone controls whether projected winners are visible.
+  function showProjections() { return projectOn || predictMode; }
 
   function formatDate(iso, options={}) {
     const d = new Date(iso);
@@ -1234,8 +1262,15 @@
       return `<div class="team ${win ? "predicted-winner" : ""}"><span class="name">${escapeHtml(teams[i]?.name || "TBD")}</span><span class="score">${escapeHtml(score(i))}</span></div>`;
     }).join("");
     const settled = teams[0] && teams[1] && !teams[0].placeholder && !teams[1].placeholder;
+    const h2h = MATCH_H2H[m.id];
     const h2hHtml = settled
-      ? `<div class="h2h"><strong>Head-to-head:</strong> <a href="${escapeAttr(aiscoreH2H(teams[0].name, teams[1].name))}" target="_blank" rel="noopener">full record &amp; recent meetings on AiScore →</a></div>`
+      ? `<div class="h2h">
+          <strong>Head-to-head</strong>
+          ${h2h ? `<div class="h2h-all">${escapeHtml(h2h.allTime)}</div>
+            ${h2h.recent ? `<div class="h2h-recent"><span class="h2h-k">Recent:</span> ${escapeHtml(h2h.recent)}</div>` : ""}
+            ${h2h.note ? `<div class="h2h-note">${escapeHtml(h2h.note)}</div>` : ""}` : ""}
+          <a class="h2h-link" href="${escapeAttr(aiscoreH2H(teams[0].name, teams[1].name))}" target="_blank" rel="noopener">live record on AiScore →</a>
+        </div>`
       : `<div class="h2h"><strong>Head-to-head:</strong> <span class="small">available once both teams are confirmed.</span></div>`;
     const link = m.espnLink ? `<p class="small" style="margin-top:8px;"><a href="${escapeAttr(m.espnLink)}" target="_blank" rel="noopener">ESPN match center →</a></p>` : "";
     const eloHtml = project ? renderElo(m) : `<div class="elo"><span class="small">Turn on <strong>Project</strong> to see the ELO prediction.</span></div>`;
