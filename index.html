@@ -1237,12 +1237,19 @@
 
   // AI preview card: why it's exciting, things to watch, two key players per team.
   function renderBrief(m) {
+    // Use the teams actually in this slot now (feeders may have resolved live), not the static slot type.
+    const teams = m.slots.map(resolveOfficialSlot);
+    const settled = teams.length === 2 && teams.every(t => t && !t.placeholder);
     const b = MATCH_BRIEFS[m.id];
-    if (!b) {
-      const ph = m.slots.some(s => s.type !== "team");
-      return `<div class="brief brief-empty"><span class="small">${ph
+    // Only trust the embedded preview if it matches the two teams currently in this slot
+    // (guards against ESPN producing a different matchup than the predicted bracket).
+    const briefTeams = b ? b.players.map(p => norm(p.team)) : [];
+    const briefMatches = b && settled && teams.every(t => briefTeams.includes(norm(t.name)));
+    if (!briefMatches) {
+      const msg = !settled
         ? "An AI match preview will appear here once both teams are confirmed."
-        : "No AI preview available for this match yet."}</span></div>`;
+        : "No AI preview for this matchup yet — see the head-to-head and ELO below.";
+      return `<div class="brief brief-empty"><span class="small">${escapeHtml(msg)}</span></div>`;
     }
     const players = b.players.map(p => `
       <div class="brief-player">
