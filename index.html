@@ -54,6 +54,7 @@
       border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);
       color: var(--text); border-radius: 999px; padding: 7px 10px; font-size: 13px; white-space: nowrap;
     }
+    .recent-hint { border-color: rgba(158,233,255,.45); background: rgba(158,233,255,.10); color: var(--accent2); }
     .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 16px var(--accent); }
     #tzPicker { background: rgba(255,255,255,.08); color: var(--text); border: 1px solid rgba(255,255,255,.16); border-radius: 8px; padding: 3px 6px; font: inherit; font-size: 13px; }
     #tzPicker option { color: #111; }
@@ -281,6 +282,7 @@
   </div>
   <div id="recentControls" class="controls-row hidden">
     <span class="pill"><span id="recentStatus">Fetches live odds, cards & news from ESPN</span></span>
+    <span id="recentHint" class="pill recent-hint hidden">Turn on <strong>Project</strong> (or Predict mode) to see the blended odds on the bracket.</span>
     <span class="slider-wrap">
       <label for="marketSlider">Market weight</label>
       <input id="marketSlider" type="range" min="0" max="1" step="0.05" value="0.5" />
@@ -990,7 +992,15 @@
     }
     renderUpNext(); renderBracket(); renderPathSummary();
     if (modalOpenId && byId.get(modalOpenId)) document.getElementById("modalBody").innerHTML = renderDetail(byId.get(modalOpenId));
+    updateRecentHint();
     fitBracket();
+  }
+
+  // When the Recent-data layer is on but no projections are shown, the market blend has
+  // nothing visible to change — nudge the user to turn on Project (or Predict mode).
+  function updateRecentHint() {
+    const el = document.getElementById("recentHint");
+    if (el) el.classList.toggle("hidden", !(recentDataOn && !showProjections()));
   }
 
   let fitScheduled = false;
