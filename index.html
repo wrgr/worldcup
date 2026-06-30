@@ -63,8 +63,7 @@
     }
     button:hover { filter: brightness(1.08); }
     main { padding: 22px clamp(16px, 3vw, 42px) 42px; }
-    .top-grid { display: grid; grid-template-columns: minmax(280px, 440px) 1fr; gap: 20px; align-items: start; }
-    @media (max-width: 1050px) { .top-grid { grid-template-columns: 1fr; } }
+    #pathSection, #upNextSection { margin-top: 22px; }
     section, .panel {
       background: var(--panel); border: 1px solid rgba(255,255,255,.09); border-radius: var(--radius);
       box-shadow: 0 20px 60px var(--shadow);
@@ -73,13 +72,45 @@
     h2 { margin: 0 0 14px; font-size: 19px; letter-spacing: -.02em; }
     h3 { margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: #d8e8ff; }
     h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-    .upcoming-list { display: flex; flex-direction: column; gap: 10px; }
-    .upcoming-card {
-      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 12px;
+    .source-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
+    /* Up-next preview cards (also used on printed page 2) */
+    .brief-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; }
+    .brief-card {
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09); border-radius: 14px;
+      padding: 14px 16px; cursor: pointer; transition: border-color .15s, background .15s, transform .15s;
     }
-    .match-time { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
-    .match-title { display: flex; justify-content: space-between; gap: 10px; align-items: center; font-weight: 850; }
-    .match-meta, .source-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
+    .brief-card:hover, .brief-card:focus-visible {
+      border-color: rgba(120,170,255,.55); background: rgba(255,255,255,.06); transform: translateY(-1px); outline: none;
+    }
+    .bc-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+    .bc-title { font-weight: 850; font-size: 15.5px; letter-spacing: -.01em; }
+    .bc-vs { color: var(--muted); font-weight: 600; font-size: 12px; }
+    .bc-status.live { color: var(--accent); font-size: 11px; font-weight: 800; }
+    .bc-meta { color: var(--muted); font-size: 12px; margin: 4px 0 10px; }
+    .bc-elo { color: var(--pred); }
+    .bc-line { font-size: 12.7px; line-height: 1.46; margin: 0 0 8px; }
+    .bc-line strong { color: #d8e8ff; font-weight: 700; }
+    .bc-players { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+    .bc-players li { font-size: 12px; line-height: 1.42; padding-left: 10px; border-left: 2px solid rgba(120,170,255,.32); }
+    .bp-name { font-weight: 800; }
+    .bp-team { color: var(--muted); font-size: 11px; }
+    .bp-role { display: block; color: var(--muted); font-size: 11px; }
+    .bp-bio { display: block; margin-top: 1px; }
+    .bp-fun { display: block; margin-top: 1px; color: var(--accent2); }
+    .bc-more { margin-top: 10px; font-size: 11.5px; color: var(--muted); }
+    /* AI preview block inside the match popup */
+    .brief { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+    .brief-tag { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--pred); border: 1px solid rgba(150,130,255,.45); border-radius: 999px; padding: 2px 8px; margin-bottom: 6px; }
+    .brief h4 { margin: 10px 0 4px; }
+    .brief p { margin: 0 0 6px; font-size: 13px; line-height: 1.5; }
+    .brief-players { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+    .brief-player { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 8px 10px; }
+    .brief-player .bp-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 2px; }
+    .brief-player .bp-bio { font-size: 12px; }
+    .brief-player .bp-fun { font-size: 12px; }
+    .brief-empty { color: var(--muted); }
+    @media (max-width: 520px) { .brief-players { grid-template-columns: 1fr; } }
     .empty { color: var(--muted); padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
     .bracket-shell { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
     #bracketScale { width: 100%; position: relative; }
@@ -160,7 +191,7 @@
     .probbar { margin-top: 6px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
     .probbar > span { display: block; height: 100%; width: 50%; background: linear-gradient(90deg, var(--pred), var(--accent2)); border-radius: 999px; }
     .h2h { margin-top: 7px; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
-    .legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .legend { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:14px; }
     .legend span { font-size: 12px; color: var(--muted); padding: 6px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); }
     details { margin-top: 14px; color: var(--muted); font-size: 13px; }
     summary { cursor: pointer; color: var(--text); }
@@ -171,14 +202,43 @@
     .model-card code { color: #f6f9ff; background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 5px; }
     .source-list { padding-left: 18px; margin: 8px 0 0; }
     @media print {
+      @page { size: landscape; margin: 0.4in; }
       header { position: static; }
       body { background: #fff; color: #111; }
-      section, .panel, .game { box-shadow: none; background: #fff; border-color: #bbb; }
-      .bracket-shell { overflow: visible; height: auto !important; }
-      #bracketScale { transform: none !important; width: auto !important; }
+      section, .panel, .game, .brief-card { box-shadow: none; background: #fff; border-color: #bbb; }
+      /* Page 1 = bracket only: hide chrome and the on-screen-only sections. */
+      header .subhead, .controls-row, .scroll-hint, #introNote, #pathSection, #statusNote, #sources, .modal { display: none !important; }
+      header h1 { margin: 0 0 2px; font-size: 20px; }
+      header .byline { margin: 0 0 6px; }
+      .bracket-shell { overflow: visible; height: auto !important; padding: 0; }
+      /* JS (beforeprint) sets an explicit scale on #bracketScale so the whole bracket fits one page. */
+      #bracketScale { margin: 0; transform-origin: top left; width: max-content; }
+      /* Shrink-wrap & left-align so scaling can't push the outer columns off the page. */
+      #bracket { width: max-content !important; justify-content: flex-start !important; }
       #connectors path { stroke: #999 !important; }
-      .modal { display: none !important; }
       .bcol-body { min-height: 0; }
+      .legend { margin-top: 8px; }
+      .legend span { border-color: #bbb; color: #333; }
+      /* Page 2 = next-match preview cards. */
+      #upNextSection { break-before: page; margin-top: 0; border: none; }
+      #upNextSection .section-inner { padding: 0; }
+      #upNextSection h2, #upNextSection .small { color: #111; }
+      #upNextSection h2 { font-size: 16px; margin: 0 0 4px; }
+      .brief-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
+      .brief-card { color: #111; break-inside: avoid; padding: 9px 11px; border-radius: 10px; }
+      .brief-card .bc-title { font-size: 12.5px; }
+      .brief-card .bc-title, .brief-card .bc-meta, .brief-card .bp-team, .brief-card .bp-role, .brief-card .bc-line strong { color: #333; }
+      .brief-card .bc-meta { font-size: 10px; margin: 2px 0 5px; }
+      .brief-card .bc-line { font-size: 10px; line-height: 1.32; margin-bottom: 4px; color: #111; }
+      .brief-card .bc-players { gap: 3px; margin-top: 4px; }
+      .brief-card .bc-players li { font-size: 9.6px; line-height: 1.28; padding-left: 6px; }
+      .brief-card .bp-role { display: inline; }
+      .brief-card .bp-role::before { content: " · "; }
+      .brief-card .bp-bio { color: #111; }
+      .brief-card .bp-fun { color: #066; }
+      .brief-card .bc-elo { color: #534; }
+      .brief-card .bc-more { display: none; }
+      .bc-players li { border-left-color: #99b; }
     }
   </style>
 </head>
@@ -209,6 +269,7 @@
         <option value="Australia/Sydney">Sydney</option>
       </select>
     <button id="refreshBtn" type="button">Refresh now</button>
+    <button id="projectBtn" type="button" class="secondary">Project: off</button>
     <button id="predictBtn" type="button" class="secondary">Predict mode: off</button>
     <button id="recentBtn" type="button" class="secondary">Recent data: off</button>
   </div>
@@ -233,35 +294,35 @@
   </div>
 </header>
 <main>
-  <div class="top-grid">
-    <section>
-      <div class="section-inner">
-        <h2>Upcoming matches</h2>
-        <div id="upcoming" class="upcoming-list"></div>
-        <div class="legend">
-          <span>Green = official winner</span>
-          <span>Purple = ELO projected winner</span>
-          <span>Teal = your pick · dashed purple = implied by a later pick</span>
-          <span>H2H = meetings incl. friendlies since 2021-06-29 (~5 yrs)</span>
-        </div>
-        <p class="small" style="margin-top:10px;">Tap any match to expand its ELO edge, betting market, cards, news, and head-to-head. Full sources are listed at the bottom of the page.</p>
-      </div>
-    </section>
-    <section>
-      <div class="section-inner">
-        <h2>Projected path</h2>
-        <div id="pathSummary" class="model-card">Computing projection…</div>
-      </div>
-    </section>
-  </div>
+  <p class="small" id="introNote" style="margin:0 0 10px;">Tap any match for an AI preview, ELO edge, betting market, and head-to-head. Press <strong>Project</strong> or <strong>Predict mode</strong> (top bar) to fill in winners. Sources are at the bottom.</p>
 
-  <section style="margin-top:20px;">
+  <section>
     <div class="scroll-hint">← Scroll horizontally to see the full bracket →</div>
     <div class="bracket-shell">
       <div id="bracketScale">
         <svg id="connectors" aria-hidden="true" preserveAspectRatio="none"></svg>
         <div id="bracket" class="bracket" aria-live="polite"></div>
       </div>
+    </div>
+    <div class="legend">
+      <span>Green = official winner</span>
+      <span>Purple = ELO projected winner</span>
+      <span>Teal = your pick · dashed purple = implied by a later pick</span>
+    </div>
+  </section>
+
+  <section id="pathSection">
+    <div class="section-inner">
+      <h2>Projected path</h2>
+      <div id="pathSummary" class="model-card">Press Project to compute the path.</div>
+    </div>
+  </section>
+
+  <section id="upNextSection">
+    <div class="section-inner">
+      <h2>Up next — match previews</h2>
+      <p class="small" style="margin:-6px 0 12px;">AI-written previews for the next matches. Tap a card for the full preview, ELO edge, and head-to-head.</p>
+      <div id="upNext" class="brief-grid"></div>
     </div>
   </section>
 
@@ -418,6 +479,108 @@
     rightR32: ["53452557","53452561","53452563","53452565","53452569","53452503","53452505","53452507"]
   };
 
+  // AI-written match previews, keyed by match id. Each: { exciting, watch, players:[2 home, 2 away] }.
+  // Shown in the match popup (bracket + upcoming) and on the printed second page.
+  // GENERATED CONTENT — verify before treating any player detail as authoritative.
+  const MATCH_BRIEFS = {
+    "53452557": { exciting:"Five-time champions Brazil bring samba flair and tournament pedigree against Japan, Asia's most technically polished side whose fearless, high-pressing style has stunned giants before. It's iconic individual brilliance versus disciplined collective speed.", watch:"Watch whether Japan's compact pressing and quick transitions can rattle Brazil's build-up, and whether Brazil's attackers can unlock Japan's organized defensive block with moments of individual magic.", players:[
+      { name:"Vinícius Júnior", team:"Brazil", role:"Winger, Real Madrid", bio:"Explosive Brazilian winger and one of the world's premier attackers, a Champions League winner and perennial Ballon d'Or contender at Real Madrid.", fun:"Known for his electric dribbling and trademark celebratory dances after big goals." },
+      { name:"Alisson", team:"Brazil", role:"Goalkeeper, Liverpool", bio:"Elite Brazilian goalkeeper widely regarded as among the best in the world, a Premier League and Champions League winner with Liverpool.", fun:"Once scored a dramatic stoppage-time winning header for Liverpool in 2021." },
+      { name:"Takefusa Kubo", team:"Japan", role:"Winger, Real Sociedad", bio:"Skillful Japanese winger and former Barcelona academy product who became a creative talisman at Real Sociedad.", fun:"Nicknamed the 'Japanese Messi' during his youth days at La Masia." },
+      { name:"Wataru Endo", team:"Japan", role:"Midfielder, Liverpool", bio:"Tenacious Japanese defensive midfielder and national-team captain, a Premier League winner who anchors the side with relentless energy.", fun:"Captained Japan to a memorable friendly win over Germany in 2023." }
+    ]},
+    "53452541": { exciting:"Four-time world champions Germany, with their renewed attacking core, face plucky underdogs Paraguay, whose gritty, physical, counter-attacking spirit makes them dangerous spoilers. It's tournament heavyweight versus tenacious South American resilience.", watch:"Watch Germany's possession-heavy approach probe Paraguay's deep, organized block, and whether Paraguay can frustrate the Germans and threaten on set pieces and rapid counters.", players:[
+      { name:"Jamal Musiala", team:"Germany", role:"Attacking midfielder, Bayern Munich", bio:"Gifted German playmaker and dribbling sensation at Bayern Munich, considered one of the brightest creative talents in world football.", fun:"Was eligible for England before committing his international future to Germany." },
+      { name:"Florian Wirtz", team:"Germany", role:"Attacking midfielder, Liverpool", bio:"Creative German playmaker, a Bundesliga title-winner with Leverkusen before a high-profile move to Liverpool, dazzling with vision and flair.", fun:"Starred in Leverkusen's unbeaten 2023-24 Bundesliga-winning campaign." },
+      { name:"Miguel Almirón", team:"Paraguay", role:"Winger, Atlanta United", bio:"Energetic Paraguayan winger known for his pace and work rate, a fan favorite after years in the Premier League with Newcastle.", fun:"Was a key part of Newcastle's return to the Premier League's upper reaches." },
+      { name:"Antonio Sanabria", team:"Paraguay", role:"Forward, Cremonese", bio:"Experienced Paraguayan striker and a key attacking outlet for the national team after seasons in Italy's Serie A.", fun:"Came through Barcelona's youth system before building his career in Italy." }
+    ]},
+    "53452547": { exciting:"Total Football heritage meets a new African powerhouse as the Netherlands face Morocco, the first African side to reach a World Cup semifinal in 2022. Dutch technical precision against Moroccan passion and defensive steel.", watch:"Watch Morocco's disciplined, counter-attacking organization test the Netherlands' patient build-up, and the midfield battle between two technically rich, well-drilled sides hungry to make a statement.", players:[
+      { name:"Virgil van Dijk", team:"Netherlands", role:"Defender, Liverpool", bio:"Commanding Dutch centre-back and national-team captain, a Champions League and Premier League winner regarded as one of the finest defenders of his generation.", fun:"Once held a record for going an extraordinary stretch without being dribbled past." },
+      { name:"Cody Gakpo", team:"Netherlands", role:"Forward, Liverpool", bio:"Versatile Dutch attacker with pace and a powerful finish, a Premier League winner at Liverpool and a key World Cup goalscorer for the Netherlands.", fun:"Scored in three straight matches at the 2022 World Cup." },
+      { name:"Achraf Hakimi", team:"Morocco", role:"Right-back, Paris Saint-Germain", bio:"Dynamic Moroccan right-back and one of the world's best, blending defensive duty with relentless attacking runs at Paris Saint-Germain.", fun:"Scored the decisive penalty that knocked Spain out of the 2022 World Cup." },
+      { name:"Brahim Díaz", team:"Morocco", role:"Attacking midfielder, Real Madrid", bio:"Creative Moroccan playmaker at Real Madrid who chose to represent Morocco internationally, adding flair and guile to the attack.", fun:"Began his senior career at Manchester City before joining Real Madrid." }
+    ]},
+    "53452561": { exciting:"Two emerging forces collide as Ivory Coast, reigning African champions with power and pace, meet a thrilling Norway side spearheaded by one of the planet's most lethal goalscorers. Raw firepower on both ends promises drama.", watch:"Watch whether Ivory Coast's athletic, aggressive defending can contain Norway's clinical attack, and whether the Ivorians' physical, direct play can break down a Norwegian side built around moments of striking brilliance.", players:[
+      { name:"Franck Kessié", team:"Ivory Coast", role:"Midfielder, Al-Ahli", bio:"Powerful Ivorian box-to-box midfielder and former AC Milan and Barcelona star, a driving force and leader for the national team.", fun:"Scored the winning penalty in the 2023 Africa Cup of Nations final on home soil." },
+      { name:"Simon Adingra", team:"Ivory Coast", role:"Winger, Brighton", bio:"Speedy, direct Ivorian winger who emerged at Brighton in the Premier League, known for his dribbling and end product.", fun:"Shone as Ivory Coast won the 2023 Africa Cup of Nations on home turf." },
+      { name:"Erling Haaland", team:"Norway", role:"Striker, Manchester City", bio:"Prolific Norwegian striker and one of the most feared goalscorers on earth, a record-breaking Premier League and Champions League winner at Manchester City.", fun:"Set the Premier League single-season scoring record in his debut campaign." },
+      { name:"Martin Ødegaard", team:"Norway", role:"Attacking midfielder, Arsenal", bio:"Elegant Norwegian playmaker and national-team captain who leads Arsenal as their creative captain, prized for his vision and technique.", fun:"Became Norway's youngest-ever international at just 15 years old." }
+    ]},
+    "53452543": { exciting:"France's star-laden firepower meets a resilient, well-organized Sweden in a clash of pace and power versus disciplined Scandinavian structure. Les Bleus arrive as one of the favorites, but Sweden have a history of upsetting giants on the big stage.", watch:"Watch how Sweden's compact defensive block tries to smother France's transitions, and whether their forwards can punish France on the counter. The duel between France's flair and Sweden's organization will define the tempo.", players:[
+      { name:"Kylian Mbappé", team:"France", role:"Forward, Real Madrid", bio:"French superstar and one of the world's best forwards, a 2018 World Cup winner now leading the line for Real Madrid.", fun:"Scored a hat-trick in the 2022 World Cup final, a rare feat in football's biggest game." },
+      { name:"Aurélien Tchouaméni", team:"France", role:"Midfielder, Real Madrid", bio:"French defensive midfielder who anchors the engine room for both Real Madrid and Les Bleus.", fun:"Joined Real Madrid in 2022 in one of the most expensive transfers for a defensive midfielder." },
+      { name:"Alexander Isak", team:"Sweden", role:"Forward, Liverpool", bio:"Sweden's elite striker, a tall, technical finisher who became one of the Premier League's most coveted forwards.", fun:"Combines unusual height with the close control and balance of a much smaller player." },
+      { name:"Viktor Gyökeres", team:"Sweden", role:"Forward, Arsenal", bio:"Powerful Swedish striker who earned a big move to Arsenal after a prolific goalscoring spell in Portugal.", fun:"Known for celebrating goals with a distinctive masked-hands gesture." }
+    ]},
+    "53452563": { exciting:"A fierce CONMEBOL-versus-CONCACAF flavored battle as Mexico's attacking tradition meets Ecuador's rising, physically dominant generation. Both nations expect to advance deep, making this a high-stakes test of South American steel against Mexican guile.", watch:"Watch the midfield battle to control Ecuador's elite ball-winner, and how Mexico's creators try to break down one of the tournament's stingiest defenses. Ecuador's young, fearless core adds unpredictability.", players:[
+      { name:"Edson Álvarez", team:"Mexico", role:"Midfielder, West Ham United", bio:"Mexican defensive midfielder and national-team leader who has played at the highest level in Europe.", fun:"Nicknamed 'Machine' for his tireless, relentless work rate in midfield." },
+      { name:"Santiago Giménez", team:"Mexico", role:"Forward, AC Milan", bio:"Mexican striker who earned a move to AC Milan after a prolific scoring run in the Netherlands.", fun:"Son of former Mexico international Christian Giménez, continuing a family footballing legacy." },
+      { name:"Moisés Caicedo", team:"Ecuador", role:"Midfielder, Chelsea", bio:"Ecuador's captain and one of the world's elite defensive midfielders, anchoring Chelsea's engine room.", fun:"Was named Ecuador captain after veteran Enner Valencia handed over the armband." },
+      { name:"Piero Hincapié", team:"Ecuador", role:"Defender, Arsenal", bio:"Versatile Ecuadorian centre-back known for his composure and aggression in one of the tournament's best defenses.", fun:"Comfortable on the ball, he can also fill in at left-back when needed." }
+    ]},
+    "53452565": { exciting:"Tournament heavyweights England face an ambitious DR Congo side eager to announce themselves on the world stage. It is a contrast of England's deep talent pool and trophy expectations against the pace, power, and fearlessness of the Leopards.", watch:"Watch whether DR Congo's athleticism and energy can disrupt England's possession game, and how England's creative players unlock a physical, well-drilled Congolese defense marshaled by their veteran captain.", players:[
+      { name:"Jude Bellingham", team:"England", role:"Midfielder, Real Madrid", bio:"England's talismanic midfielder and one of the game's brightest stars, a key figure for Real Madrid.", fun:"Made such an impact at Real Madrid that fans quickly adopted his name in chants." },
+      { name:"Harry Kane", team:"England", role:"Forward, Bayern Munich", bio:"England's all-time leading goalscorer and captain, a clinical, complete striker starring for Bayern Munich.", fun:"Holds England's all-time goalscoring record, surpassing Wayne Rooney." },
+      { name:"Chancel Mbemba", team:"DR Congo", role:"Defender, Lille", bio:"DR Congo's captain and most-capped player, an experienced centre-back competing in Ligue 1 with Lille.", fun:"Has represented DR Congo at multiple Africa Cup of Nations tournaments." },
+      { name:"Cédric Bakambu", team:"DR Congo", role:"Forward, Real Betis", bio:"Experienced DR Congo striker and prolific goalscorer who has played across Europe, China, and beyond.", fun:"One of DR Congo's all-time leading scorers, having found the net all around the world." }
+    ]},
+    "53452555": { exciting:"Belgium's golden-generation experience meets Senegal's African champions in a heavyweight intercontinental clash. Both sides boast Premier League-laden squads and genuine knockout pedigree, promising an intense, end-to-end battle of power and quality.", watch:"Watch the high-stakes duel between elite attackers and world-class goalkeeping, plus how Senegal's physical midfield matches Belgium's technical creators. Set pieces could prove decisive between two tall, aggressive sides.", players:[
+      { name:"Kevin De Bruyne", team:"Belgium", role:"Midfielder, Napoli", bio:"Belgian playmaker regarded as one of the finest midfielders of his generation, famed for his passing and vision.", fun:"Renowned for his pinpoint crossing and devastating long-range passing." },
+      { name:"Romelu Lukaku", team:"Belgium", role:"Forward, Napoli", bio:"Belgium's all-time leading goalscorer, a powerful and prolific striker with a long top-level European career.", fun:"Holds Belgium's all-time international goalscoring record." },
+      { name:"Kalidou Koulibaly", team:"Senegal", role:"Defender, Al-Hilal", bio:"Senegal's captain and a commanding centre-back, long considered one of Africa's best defenders.", fun:"Lifted the Africa Cup of Nations as Senegal's captain in their historic 2021 triumph." },
+      { name:"Nicolas Jackson", team:"Senegal", role:"Forward, Chelsea", bio:"Pacey Senegalese striker who became a key attacking threat in the Premier League with Chelsea.", fun:"Known for his blistering acceleration and ability to stretch defenses in behind." }
+    ]},
+    "53452553": { exciting:"A classic contrast: the United States bring pace, athleticism and a golden generation of European-based stars against a gritty, technically gifted Bosnia side that loves to grind out tight games. Knockout stakes mean one mistake ends a tournament.", watch:"Watch whether Bosnia's midfield can slow the USA's quick transitions, and how the Americans handle Bosnia's set pieces and physical, direct attacking play. Pulisic's duels out wide could decide the match.", players:[
+      { name:"Christian Pulisic", team:"United States", role:"Winger, AC Milan", bio:"The talismanic captain of the USMNT and the face of American soccer, he stars on the wing for Serie A side AC Milan.", fun:"Nicknamed 'Captain America' and was the most expensive American transfer ever when he joined Chelsea in 2019." },
+      { name:"Weston McKennie", team:"United States", role:"Midfielder, Juventus", bio:"A versatile, box-to-box American midfielder who has been a Juventus regular and a USMNT mainstay for years.", fun:"Grew up partly in Germany while his father served in the military, sparking his early love of the game." },
+      { name:"Edin Džeko", team:"Bosnia and Herzegovina", role:"Striker, Fiorentina", bio:"Bosnia's all-time leading scorer and legendary captain, a powerful target striker who has thrived across Europe's top leagues.", fun:"Earned the nickname 'The Bosnian Diamond' and once won the Premier League with Manchester City." },
+      { name:"Sead Kolašinac", team:"Bosnia and Herzegovina", role:"Defender, Atalanta", bio:"A physically imposing, marauding left-sided defender for Bosnia who has played for Arsenal and in Serie A.", fun:"Nicknamed 'The Tank' for his bulldozing, muscular running style down the flank." }
+    ]},
+    "53452551": { exciting:"Reigning European champions Spain bring their mesmerizing tiki-taka and a dazzling new generation against a disciplined, organized Austria side that presses relentlessly. It is artistry versus intensity with a place in the next round on the line.", watch:"Can Austria's aggressive high press disrupt Spain's possession game before it builds rhythm? Keep an eye on teenager Lamine Yamal taking on Austria's full-backs in one-on-one situations.", players:[
+      { name:"Lamine Yamal", team:"Spain", role:"Winger, FC Barcelona", bio:"A generational Spanish winger and Barcelona prodigy already regarded as one of the best young players on the planet.", fun:"Became the youngest-ever scorer at a European Championship at Euro 2024 while still a teenager." },
+      { name:"Pedri", team:"Spain", role:"Midfielder, FC Barcelona", bio:"Spain's elegant midfield metronome at Barcelona, prized for his vision, calm passing and ball control under pressure.", fun:"Won the Kopa Trophy for the world's best young player and is renowned for rarely losing the ball." },
+      { name:"David Alaba", team:"Austria", role:"Defender, Real Madrid", bio:"Austria's captain and most decorated player, a multiple Champions League winner with Bayern Munich and Real Madrid.", fun:"Famously versatile, he has excelled at left-back, centre-back and even in midfield over his career." },
+      { name:"Marcel Sabitzer", team:"Austria", role:"Midfielder, Borussia Dortmund", bio:"A powerful, goal-scoring Austrian midfielder for Borussia Dortmund and a driving force in his national team's engine room.", fun:"Known for thunderous long-range strikes that have lit up the Bundesliga." }
+    ]},
+    "53452549": { exciting:"Two golden generations and their iconic captains collide as Cristiano Ronaldo's Portugal face Luka Modrić's Croatia, likely the final World Cup for both legends. Portuguese flair against Croatian midfield mastery makes for a heavyweight clash.", watch:"The midfield battle is everything: can Croatia's veterans control tempo against Portugal's powerful, fast-flowing attack? Watch how Portugal try to exploit space behind Croatia's aging back line.", players:[
+      { name:"Cristiano Ronaldo", team:"Portugal", role:"Forward, Al-Nassr", bio:"One of the greatest players in history and Portugal's all-time talisman, now leading the line for Saudi club Al-Nassr.", fun:"He is the all-time leading scorer in men's international football with a record number of goals." },
+      { name:"Bernardo Silva", team:"Portugal", role:"Midfielder, Manchester City", bio:"A silky, tireless Portuguese playmaker and multiple Premier League winner with Manchester City.", fun:"Celebrated for his close control and ability to dribble out of the tightest spaces." },
+      { name:"Luka Modrić", team:"Croatia", role:"Midfielder, AC Milan", bio:"Croatia's legendary captain and a Ballon d'Or winner, now orchestrating play for AC Milan in the twilight of a storied career.", fun:"He broke Messi and Ronaldo's decade-long grip on the Ballon d'Or by winning it in 2018." },
+      { name:"Joško Gvardiol", team:"Croatia", role:"Defender, Manchester City", bio:"A composed, ball-playing Croatian centre-back at Manchester City, one of the best young defenders in the world.", fun:"He became one of the most expensive defenders ever when City signed him in 2023." }
+    ]},
+    "53452505": { exciting:"Switzerland's organized, battle-hardened side meets the pace and flair of Algeria's North African stars in an intriguing clash of styles. Both nations sense a real chance to spring a deep run, raising the stakes in this knockout tie.", watch:"Can Switzerland's disciplined defensive block contain Algeria's quick, creative attackers in transition? Watch Xhaka's command of midfield against Algeria's effort to play through the lines.", players:[
+      { name:"Granit Xhaka", team:"Switzerland", role:"Midfielder, Sunderland", bio:"Switzerland's long-serving captain and midfield leader, a vastly experienced operator in Europe's top leagues.", fun:"Renowned for his pinpoint long-range passing and fiery, vocal on-pitch leadership." },
+      { name:"Manuel Akanji", team:"Switzerland", role:"Defender, Manchester City", bio:"A calm, technically excellent Swiss centre-back and Champions League winner with Manchester City.", fun:"Famously cool on the ball, he is trusted to play out from the back under heavy pressure." },
+      { name:"Riyad Mahrez", team:"Algeria", role:"Winger, Al-Ahli", bio:"Algeria's captain and star winger, a Premier League and Champions League winner now playing for Saudi club Al-Ahli.", fun:"His curling left-footed strikes from the right wing are among the most feared in the game." },
+      { name:"Ismaël Bennacer", team:"Algeria", role:"Midfielder, AC Milan", bio:"A tenacious, technically gifted Algerian midfielder whose ball-winning and passing anchor the national team.", fun:"He was named the best player of the 2019 Africa Cup of Nations, which Algeria won." }
+    ]},
+    "53452569": { exciting:"Lionel Messi and the reigning world champions face World Cup debutants Cape Verde, the tiny island nation whose fairytale qualification is one of football's great underdog stories against the ultimate giant.", watch:"Watch whether Cape Verde's compact, athletic block can frustrate Argentina's patient buildup, and whether Messi can unlock a disciplined defense with one moment of magic.", players:[
+      { name:"Lionel Messi", team:"Argentina", role:"Forward, Inter Miami", bio:"Argentine icon widely regarded as one of the greatest players ever, an eight-time Ballon d'Or winner who captained Argentina to the 2022 World Cup title.", fun:"He won the Golden Ball as best player at both the 2014 and 2022 World Cups." },
+      { name:"Lautaro Martínez", team:"Argentina", role:"Forward, Inter Milan", bio:"Argentine striker and Inter Milan captain, a clinical finisher who has been a key figure in Argentina's recent trophy-laden era.", fun:"He was the top scorer of the 2024 Copa América, which Argentina won." },
+      { name:"Ryan Mendes", team:"Cape Verde", role:"Forward", bio:"Cape Verde's captain and talisman, the nation's record appearance-maker and a leader who has spent his career in European leagues.", fun:"He is widely seen as the symbolic leader of the Blue Sharks' historic first World Cup run." },
+      { name:"Garry Rodrigues", team:"Cape Verde", role:"Winger", bio:"Cape Verdean winger known for his dribbling and flair, with previous spells at Galatasaray and in Saudi Arabia.", fun:"He won the Turkish Süper Lig title with Galatasaray in 2018." }
+    ]},
+    "53452507": { exciting:"Two of the most flamboyant, attack-minded sides in the tournament collide as Colombia's silky South American technicians meet Ghana's pace and power, a clash of styles between continental heavyweights.", watch:"Watch the duel between Colombia's creative engine and Ghana's energetic midfield, plus whether Ghana's transition speed can exploit Colombia's high defensive line.", players:[
+      { name:"Luis Díaz", team:"Colombia", role:"Winger, Bayern Munich", bio:"Explosive Colombian winger who joined Bayern Munich after starring for Liverpool, known for his directness and relentless work rate.", fun:"His father organized a local football school in his remote hometown of Barrancas." },
+      { name:"James Rodríguez", team:"Colombia", role:"Attacking midfielder", bio:"Colombia's creative captain and playmaker, famed for his left foot and vision since bursting onto the scene at the 2014 World Cup.", fun:"He won the Golden Boot as top scorer at the 2014 World Cup." },
+      { name:"Mohammed Kudus", team:"Ghana", role:"Attacking midfielder, Tottenham Hotspur", bio:"Versatile Ghanaian attacker who joined Tottenham, a dynamic dribbler comfortable across the front line and one of Africa's brightest talents.", fun:"He scored a memorable acrobatic goal for West Ham in European competition." },
+      { name:"Thomas Partey", team:"Ghana", role:"Midfielder, Villarreal", bio:"Powerful Ghanaian central midfielder who anchored Arsenal's engine room for years before moving to Spain, prized for his strength and passing range.", fun:"He previously spent years developing at Atlético Madrid in Spain." }
+    ]},
+    "53452503": { exciting:"The Socceroos' disciplined, hard-running Australian side meets the seven-time African champions of Egypt, a contrast between Asian grit and continental pedigree led by one of the world's elite forwards.", watch:"Watch whether Australia's organized defensive structure can contain Mohamed Salah, and whether Egypt's star power can break down a famously resilient Socceroos block.", players:[
+      { name:"Mathew Ryan", team:"Australia", role:"Goalkeeper", bio:"Australia's long-serving captain and goalkeeper, a veteran of European football who has been the Socceroos' defensive backbone for over a decade.", fun:"He once played in the Premier League for Brighton & Hove Albion." },
+      { name:"Jackson Irvine", team:"Australia", role:"Midfielder, St. Pauli", bio:"Combative Australian midfielder and on-field leader at German club St. Pauli, known for his box-to-box energy and tackling.", fun:"He is recognizable for his distinctive long hair and moustache." },
+      { name:"Mohamed Salah", team:"Egypt", role:"Forward, Liverpool", bio:"Egypt's captain and superstar, one of the world's best forwards and a multiple-time Premier League Golden Boot winner with Liverpool.", fun:"One of the most prolific players in Premier League history during his Liverpool spell." },
+      { name:"Mostafa Mohamed", team:"Egypt", role:"Forward, Nantes", bio:"Egyptian centre-forward playing in France's Ligue 1 with Nantes, a strong target man who provides a focal point alongside Salah.", fun:"He previously played in Turkey for Galatasaray." }
+    ]},
+    "53452545": { exciting:"Host nation Canada, riding a wave of home-tournament momentum, faces Bafana Bafana of South Africa in an intercontinental meeting of two rising sides eager to prove themselves on the global stage.", watch:"Watch Canada's pacey wide attack test South Africa's organization, and whether Bafana Bafana's possession-based approach can slow the hosts' counterattacking threat.", players:[
+      { name:"Alphonso Davies", team:"Canada", role:"Left-back/Winger, Bayern Munich", bio:"Canada's star and one of the fastest players in the world, a Champions League winner with Bayern Munich and the face of Canadian soccer.", fun:"He was born in a refugee camp in Ghana before his family settled in Canada." },
+      { name:"Jonathan David", team:"Canada", role:"Forward, Juventus", bio:"Canada's prolific striker who moved to Juventus, a clinical finisher and his country's main goal threat at major tournaments.", fun:"He earned the nickname 'Iceman' for his calm finishing." },
+      { name:"Ronwen Williams", team:"South Africa", role:"Goalkeeper, Mamelodi Sundowns", bio:"South Africa's captain and goalkeeper, a domestic-league standout celebrated for big-game shot-stopping for Bafana Bafana.", fun:"He saved four penalties in a single shootout at the 2023 Africa Cup of Nations." },
+      { name:"Percy Tau", team:"South Africa", role:"Forward, Al Ahly", bio:"Skillful South African attacker known for his creativity, a former Brighton player now starring for Egyptian giants Al Ahly.", fun:"He is nicknamed 'The Lion of Judah' for his flair on the ball." }
+    ]}
+  };
+
   let matches = [];
   let byId = new Map();
   let predictMode = false;
@@ -426,6 +589,7 @@
   let lastRender = { message: "Loading…", isError: false };
   let lastUpdated = null;            // Date of last successful live retrieval
   let lastUpdatedSource = null;      // which source supplied it
+  let projectOn = false;             // show ELO-projected winners (off by default)
   let recentDataOn = false;          // "incorporate recent data" layer toggle
   let marketWeight = 0.5;            // blend weight: 0 = pure ELO, 1 = pure market
   let recentLoading = false;
@@ -512,6 +676,10 @@
   function pairKey(a, b) { return [norm(a), norm(b)].sort().join("|"); }
   function getRating(teamObj) { return eloRatings[norm(teamObj?.name)]; }
   function pct(x) { return `${Math.round(x * 100)}%`; }
+  // Projections (ELO auto-fill of likely winners) are shown only when explicitly requested:
+  // the Project button, while building a manual bracket in Predict mode, or when the
+  // Recent-data layer is on (so its market blend can visibly modify the probabilities/picks).
+  function showProjections() { return projectOn || predictMode || recentDataOn; }
 
   function formatDate(iso, options={}) {
     const d = new Date(iso);
@@ -792,7 +960,7 @@
         ? `${lastUpdated.toLocaleString(undefined, selectedTZ ? { timeZone: selectedTZ } : {})}${lastUpdatedSource ? ` (${lastUpdatedSource})` : ""}`
         : "live fetch pending — showing snapshot";
     }
-    renderUpcoming(); renderBracket(); renderPathSummary();
+    renderUpNext(); renderBracket(); renderPathSummary();
     if (modalOpenId && byId.get(modalOpenId)) document.getElementById("modalBody").innerHTML = renderDetail(byId.get(modalOpenId));
     fitBracket();
   }
@@ -805,6 +973,33 @@
     if (shell && hint) hint.style.display = (shell.scrollWidth > shell.clientWidth + 1) ? "block" : "none";
     drawConnectors(1);
   }
+
+  // For printing, scale the whole bracket to fit one landscape page (page 1). Cleared after print.
+  function setPrintScale(on) {
+    const scaleEl = document.getElementById("bracketScale");
+    const bracket = document.getElementById("bracket");
+    if (!scaleEl || !bracket) return;
+    if (on) {
+      const W = bracket.scrollWidth, H = bracket.scrollHeight;
+      const AVAIL_W = 940, AVAIL_H = 650;        // landscape Letter usable area, minus title + legend
+      const s = Math.min(AVAIL_W / W, AVAIL_H / H, 1);
+      // Box stays W wide (so the inner flex renders at natural width) but is scaled to W*s visually;
+      // left-margin centers that scaled content on the page instead of centering the oversized box.
+      scaleEl.style.transform = `scale(${s})`;
+      scaleEl.style.width = W + "px";
+      scaleEl.style.height = (H * s) + "px";
+      scaleEl.style.marginLeft = Math.max(0, (AVAIL_W - W * s) / 2) + "px";
+      drawConnectors(s);
+    } else {
+      scaleEl.style.transform = "";
+      scaleEl.style.width = "";
+      scaleEl.style.height = "";
+      scaleEl.style.marginLeft = "";
+      fitBracket();
+    }
+  }
+  window.addEventListener("beforeprint", () => setPrintScale(true));
+  window.addEventListener("afterprint", () => setPrintScale(false));
 
   // Draw bracket elbow lines from each feeder card to the match it feeds, using measured positions.
   function drawConnectors(s) {
@@ -848,26 +1043,52 @@
     requestAnimationFrame(() => { fitScheduled = false; fitBracket(); });
   });
 
-  function renderUpcoming() {
+  // The next N matches that are still to be played (kept slightly after kickoff so live games stay visible).
+  function nextUpcoming(n) {
     const now = Date.now();
-    const upcoming = matches
-      .filter(m => !(m.state === "post") && new Date(m.kickoff).getTime() >= now - 3 * 60 * 60 * 1000)
+    return matches
+      .filter(m => m.state !== "post" && new Date(m.kickoff).getTime() >= now - 3 * 60 * 60 * 1000)
       .sort((a,b) => new Date(a.kickoff) - new Date(b.kickoff))
-      .slice(0, 10);
-    const el = document.getElementById("upcoming");
-    if (!upcoming.length) { el.innerHTML = `<div class="empty">No upcoming matches found in the embedded knockout schedule.</div>`; return; }
-    el.innerHTML = upcoming.map(m => {
-      const teams = m.slots.map(resolveProjectedSlot);
-      const live = m.state === "in";
-      const score = m.scores.every(s => s !== null) ? `${m.scores[0]}–${m.scores[1]}` : "";
-      const pred = m.prediction ? `${m.prediction.winner.name} ${pct(m.prediction.pWinner)}` : "No ELO pick yet";
-      const statusText = live ? (score || "LIVE") : "SCHEDULED";
-      return `<article class="upcoming-card">
-        <div class="match-time">${escapeHtml(formatDate(m.kickoff, {tz:true}))}</div>
-        <div class="match-title"><span>${escapeHtml(teams[0].name)} vs ${escapeHtml(teams[1].name)}</span><span class="${live ? "live" : ""}">${escapeHtml(statusText)}</span></div>
-        <div class="match-meta">${escapeHtml(m.stage)} · <span class="pred-label">ELO:</span> ${escapeHtml(pred)}${m.espnLink ? ` · <a href="${escapeAttr(m.espnLink)}" target="_blank" rel="noopener">Match center</a>` : ""}</div>
-      </article>`;
-    }).join("");
+      .slice(0, n);
+  }
+
+  // A self-contained preview card (used on the page and on the printed second page).
+  function renderBriefCard(m) {
+    const project = showProjections();
+    const teams = project ? m.slots.map(resolveProjectedSlot) : m.slots.map(resolveOfficialSlot);
+    const live = m.state === "in";
+    const score = m.scores.every(s => s !== null) ? `${m.scores[0]}–${m.scores[1]}` : "";
+    const status = live ? (score || "LIVE") : "";
+    const b = MATCH_BRIEFS[m.id];
+    const predHtml = (project && m.prediction)
+      ? `<span class="bc-elo">ELO: ${escapeHtml(m.prediction.winner.name)} ${escapeHtml(pct(m.prediction.pWinner))}</span>` : "";
+    const body = b ? `
+        <p class="bc-line"><strong>Why it's exciting.</strong> ${escapeHtml(b.exciting)}</p>
+        <p class="bc-line"><strong>Watch for.</strong> ${escapeHtml(b.watch)}</p>
+        <ul class="bc-players">${b.players.map(p => `
+          <li><span class="bp-name">${escapeHtml(p.name)}</span> <span class="bp-team">${escapeHtml(p.team)}</span>
+              <span class="bp-role">${escapeHtml(p.role)}</span>
+              <span class="bp-bio">${escapeHtml(p.bio)}</span>
+              <span class="bp-fun">⚡ ${escapeHtml(p.fun)}</span></li>`).join("")}</ul>`
+      : `<p class="bc-line small">An AI preview will appear once both teams are confirmed.</p>`;
+    return `<article class="brief-card" data-match-id="${escapeAttr(m.id)}" role="button" tabindex="0">
+      <div class="bc-head">
+        <span class="bc-title">${escapeHtml(teams[0].name)} <span class="bc-vs">vs</span> ${escapeHtml(teams[1].name)}</span>
+        ${status ? `<span class="bc-status live">${escapeHtml(status)}</span>` : ""}
+      </div>
+      <div class="bc-meta">${escapeHtml(formatDate(m.kickoff, {tz:true}))} · ${escapeHtml(m.stage)}${predHtml ? " · " : ""}${predHtml}</div>
+      ${body}
+      <div class="bc-more">Tap for full preview, ELO &amp; head-to-head →</div>
+    </article>`;
+  }
+
+  function renderUpNext() {
+    const el = document.getElementById("upNext");
+    if (!el) return;
+    const upcoming = nextUpcoming(4);
+    el.innerHTML = upcoming.length
+      ? upcoming.map(renderBriefCard).join("")
+      : `<div class="empty">No upcoming matches found in the embedded knockout schedule.</div>`;
   }
 
   const renderG = (id) => renderGame(byId.get(id));
@@ -921,6 +1142,10 @@
   }
 
   function renderPathSummary() {
+    if (!showProjections()) {
+      document.getElementById("pathSummary").innerHTML = `<span class="small">Press <strong>Project</strong> (top bar) to fill in ELO-projected winners and see the path to the title. Or use <strong>Predict mode</strong> to pick winners yourself.</span>`;
+      return;
+    }
     const final = byId.get("53452537");
     const champion = final?.winnerTeam || final?.predictedWinnerTeam;
     const leftSemi = byId.get("53452533")?.predictedWinnerTeam || byId.get("53452533")?.winnerTeam;
@@ -942,25 +1167,26 @@
 
   function renderGame(m) {
     if (!m) return "";
-    const teams = m.slots.map(resolveProjectedSlot);
+    const project = showProjections();
+    const teams = (project ? m.slots.map(resolveProjectedSlot) : m.slots.map(resolveOfficialSlot));
     const isFinal = m.state === "post";
     const isLive = m.state === "in";
-    const cardClass = isLive ? "live-game" : isFinal ? "final-game" : m.userPicked ? "user-game" : m.implied ? "implied-game" : m.prediction ? "projected-game" : "";
+    const cardClass = isLive ? "live-game" : isFinal ? "final-game" : (project && m.userPicked) ? "user-game" : (project && m.implied) ? "implied-game" : (project && m.prediction) ? "projected-game" : "";
     const score = idx => m.scores?.[idx] !== null && m.scores?.[idx] !== undefined ? m.scores[idx] : "";
     const teamsHtml = [0,1].map(i => {
       const officialWin = m.winnerIndex === i;
-      const predWin = !isFinal && m.predictedWinnerIndex === i;
+      const predWin = project && !isFinal && m.predictedWinnerIndex === i;
       const userWin = predWin && m.userPicked;
       const impliedWin = predWin && m.implied && !userWin;
-      const pickable = !isFinal && !teams[i]?.placeholder;
+      const pickable = project && !isFinal && !teams[i]?.placeholder;
       const cls = ["team", officialWin ? "official-winner" : "",
         userWin ? "user-picked" : impliedWin ? "implied-winner" : predWin ? "predicted-winner" : "",
-        teams[i]?.projected ? "projected" : ""].join(" ");
+        (project && teams[i]?.projected) ? "projected" : ""].join(" ");
       const pickAttrs = pickable ? ` data-pickable="1" data-match-id="${escapeAttr(m.id)}" data-team-name="${escapeAttr(teams[i]?.name || "")}"` : "";
       return `<div class="${cls}"${pickAttrs}><span class="name">${escapeHtml(teams[i]?.name || "TBD")}</span><span class="score">${escapeHtml(score(i))}</span></div>`;
     }).join("");
     const projClass = m.userPicked ? "proj pick" : m.implied ? "proj implied" : "proj";
-    const proj = (m.winnerIndex === undefined && m.prediction)
+    const proj = (project && m.winnerIndex === undefined && m.prediction)
       ? `<div class="${projClass}">▸ ${escapeHtml(m.prediction.winner.name)} ${escapeHtml(pct(m.prediction.pWinner))}</div>`
       : "";
     return `<article class="game ${cardClass}" data-match-id="${escapeAttr(m.id)}">
@@ -971,26 +1197,63 @@
     </article>`;
   }
 
+  // AI preview card: why it's exciting, things to watch, two key players per team.
+  function renderBrief(m) {
+    const b = MATCH_BRIEFS[m.id];
+    if (!b) {
+      const ph = m.slots.some(s => s.type !== "team");
+      return `<div class="brief brief-empty"><span class="small">${ph
+        ? "An AI match preview will appear here once both teams are confirmed."
+        : "No AI preview available for this match yet."}</span></div>`;
+    }
+    const players = b.players.map(p => `
+      <div class="brief-player">
+        <div class="bp-head"><span class="bp-name">${escapeHtml(p.name)}</span><span class="bp-team">${escapeHtml(p.team)}</span></div>
+        <div class="bp-role">${escapeHtml(p.role)}</div>
+        <div class="bp-bio">${escapeHtml(p.bio)}</div>
+        <div class="bp-fun"><span>⚡</span> ${escapeHtml(p.fun)}</div>
+      </div>`).join("");
+    return `<div class="brief">
+      <div class="brief-tag">AI match preview</div>
+      <h4>Why this match is exciting</h4>
+      <p>${escapeHtml(b.exciting)}</p>
+      <h4>Things to watch</h4>
+      <p>${escapeHtml(b.watch)}</p>
+      <h4>Key players</h4>
+      <div class="brief-players">${players}</div>
+    </div>`;
+  }
+
   function renderDetail(m) {
-    const teams = m.slots.map(resolveProjectedSlot);
-    const h2h = getH2H(teams[0], teams[1]);
+    const project = showProjections();
+    const teams = (project ? m.slots.map(resolveProjectedSlot) : m.slots.map(resolveOfficialSlot));
     const score = idx => m.scores?.[idx] !== null && m.scores?.[idx] !== undefined ? m.scores[idx] : "";
     const isFinal = m.state === "post";
     const rows = [0,1].map(i => {
-      const win = m.winnerIndex === i || (!isFinal && m.predictedWinnerIndex === i);
+      const win = m.winnerIndex === i || (project && !isFinal && m.predictedWinnerIndex === i);
       return `<div class="team ${win ? "predicted-winner" : ""}"><span class="name">${escapeHtml(teams[i]?.name || "TBD")}</span><span class="score">${escapeHtml(score(i))}</span></div>`;
     }).join("");
-    const h2hHtml = h2h
-      ? `<div class="h2h"><strong>Recent H2H:</strong> ${h2h.url ? `<a href="${escapeAttr(h2h.url)}" target="_blank" rel="noopener">${escapeHtml(h2h.text)}</a>` : escapeHtml(h2h.text)}</div>`
-      : `<div class="h2h"><strong>Recent H2H:</strong> ${escapeHtml(H2H_FALLBACK)}</div>`;
+    const settled = teams[0] && teams[1] && !teams[0].placeholder && !teams[1].placeholder;
+    const h2hHtml = settled
+      ? `<div class="h2h"><strong>Head-to-head:</strong> <a href="${escapeAttr(aiscoreH2H(teams[0].name, teams[1].name))}" target="_blank" rel="noopener">full record &amp; recent meetings on AiScore →</a></div>`
+      : `<div class="h2h"><strong>Head-to-head:</strong> <span class="small">available once both teams are confirmed.</span></div>`;
     const link = m.espnLink ? `<p class="small" style="margin-top:8px;"><a href="${escapeAttr(m.espnLink)}" target="_blank" rel="noopener">ESPN match center →</a></p>` : "";
+    const eloHtml = project ? renderElo(m) : `<div class="elo"><span class="small">Turn on <strong>Project</strong> to see the ELO prediction.</span></div>`;
     return `<h3 style="margin:0 0 4px;">${escapeHtml(m.stage)}</h3>
       <div class="small" style="margin-bottom:10px;">${escapeHtml(formatDate(m.kickoff, {tz:true}))}</div>
       ${rows}
-      ${renderElo(m)}
+      ${renderBrief(m)}
+      ${eloHtml}
       ${renderRecent(m)}
       ${h2hHtml}
       ${link}`;
+  }
+
+  // Best-effort AiScore head-to-head URL, e.g. "France"+"Morocco" -> .../soccer-france-vs-morocco
+  function aiscoreH2H(a, b) {
+    const slug = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return `https://www.aiscore.com/head-to-head/soccer-${slug(a)}-vs-${slug(b)}`;
   }
 
   function renderElo(m) {
@@ -1055,6 +1318,14 @@
     document.getElementById("pickCount").textContent = userPicks.size;
   }
 
+  function setProject(on) {
+    projectOn = on;
+    const btn = document.getElementById("projectBtn");
+    btn.textContent = `Project: ${on ? "on" : "off"}`;
+    btn.classList.toggle("toggle-on", on);
+    recompute();
+  }
+
   function setPredictMode(on) {
     predictMode = on;
     document.body.classList.toggle("predict-on", on);
@@ -1062,6 +1333,7 @@
     btn.textContent = `Predict mode: ${on ? "on" : "off"}`;
     btn.classList.toggle("toggle-on", on);
     document.getElementById("predictControls").classList.toggle("hidden", !on);
+    recompute();   // predict mode reveals projections, so re-render the bracket
   }
 
   function setRecentMode(on) {
@@ -1075,6 +1347,7 @@
   }
 
   document.getElementById("refreshBtn").addEventListener("click", loadData);
+  document.getElementById("projectBtn").addEventListener("click", () => setProject(!projectOn));
   document.getElementById("predictBtn").addEventListener("click", () => setPredictMode(!predictMode));
   document.getElementById("recentBtn").addEventListener("click", () => setRecentMode(!recentDataOn));
   document.getElementById("marketSlider").addEventListener("input", (e) => {
@@ -1106,8 +1379,14 @@
       updatePickCount(); recompute();
       return;
     }
-    const card = e.target.closest('.game[data-match-id]');
+    const card = e.target.closest('.game[data-match-id], .brief-card[data-match-id]');
     if (card) openModal(card.getAttribute("data-match-id"));
+  });
+  // Keyboard access for the preview cards (role="button").
+  document.querySelector("main").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const card = e.target.closest('.brief-card[data-match-id]');
+    if (card) { e.preventDefault(); openModal(card.getAttribute("data-match-id")); }
   });
 
   function openModal(id) {
