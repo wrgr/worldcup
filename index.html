@@ -127,6 +127,11 @@
     .bcol.center { flex: 0 0 auto; min-width: 130px; max-width: 188px; }
     .bcol.center .center-body { justify-content: center; gap: 14px; min-height: 0; }
     .when { font-size: 9.5px; color: var(--faint); margin-bottom: 4px; white-space: nowrap; padding-right: 12px; }
+    .when.live-min { color: var(--hot); font-weight: 900; font-size: 11px; display: flex; align-items: center; gap: 4px; }
+    .live-pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--hot); box-shadow: 0 0 0 0 rgba(255,107,107,.6); animation: livepulse 1.6s infinite; flex: 0 0 auto; }
+    @keyframes livepulse { 0% { box-shadow: 0 0 0 0 rgba(255,107,107,.55); } 70% { box-shadow: 0 0 0 6px rgba(255,107,107,0); } 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0); } }
+    .live-badge { display: inline-flex; align-items: center; gap: 5px; color: var(--hot); font-weight: 900; font-size: 11px; letter-spacing: .04em; padding: 2px 8px; border: 1px solid rgba(255,107,107,.5); border-radius: 999px; background: rgba(255,107,107,.1); }
+    @media (prefers-reduced-motion: reduce) { .live-pulse { animation: none; } }
     .bcol.center .game { background: linear-gradient(180deg, rgba(85,214,190,.10), rgba(255,255,255,.03)); }
     .third { margin-top: 6px; }
     .third h4 { text-align: center; margin: 8px 0 6px; color: var(--faint); }
@@ -287,7 +292,7 @@
     <button id="projectBtn" type="button" class="secondary">Project: off</button>
     <button id="predictBtn" type="button" class="secondary">Predict mode: off</button>
     <button id="recentBtn" type="button" class="secondary">Recent data: off</button>
-    <button id="payrollBtn" type="button" class="secondary">Payroll: off</button>
+    <button id="payrollBtn" type="button" class="secondary">Squad value: off</button>
   </div>
   <div id="recentControls" class="controls-row hidden">
     <span class="pill"><span id="recentStatus">Fetches live odds, cards & news from ESPN</span></span>
@@ -300,14 +305,14 @@
     <span class="small">0% = pure ELO · 100% = pure betting market. Cards and news shown per match where available.</span>
   </div>
   <div id="payrollControls" class="controls-row hidden">
-    <span class="pill">💰 Squad payroll = combined annual player salaries</span>
-    <span id="payrollHint" class="pill recent-hint hidden">Turn on <strong>Project</strong> (or Predict mode) to see payroll fold into the bracket odds.</span>
+    <span class="pill">💰 Squad value = total Transfermarkt market value</span>
+    <span id="payrollHint" class="pill recent-hint hidden">Turn on <strong>Project</strong> (or Predict mode) to see squad value fold into the bracket odds.</span>
     <span class="slider-wrap">
-      <label for="payrollSlider">Payroll weight</label>
+      <label for="payrollSlider">Value weight</label>
       <input id="payrollSlider" type="range" min="0" max="1" step="0.05" value="0.5" />
       <span id="payrollVal">50%</span>
     </span>
-    <span class="small">0% = ignore payroll · 100% = pick purely by wage bill. Payroll always shows on the cards regardless.</span>
+    <span class="small">0% = ignore value · 100% = pick purely by squad value. Value always shows on the cards regardless.</span>
   </div>
   <div id="predictControls" class="controls-row hidden">
     <span class="pill"><span id="pickCount">0</span> manual picks</span>
@@ -321,7 +326,7 @@
   </div>
 </header>
 <main>
-  <p class="small" id="introNote" style="margin:0 0 10px;">Tap any match for an AI preview, ELO edge, betting market, squad payroll, and head-to-head. Press <strong>Project</strong> or <strong>Predict mode</strong> (top bar) to fill in winners. Sources are at the bottom.</p>
+  <p class="small" id="introNote" style="margin:0 0 10px;">Tap any match for an AI preview, ELO edge, betting market, squad value, and head-to-head. Press <strong>Project</strong> or <strong>Predict mode</strong> (top bar) to fill in winners. Sources are at the bottom.</p>
 
   <section>
     <div class="scroll-hint">← Scroll horizontally to see the full bracket →</div>
@@ -369,7 +374,7 @@
         <strong>Predictions (ELO):</strong> each unresolved match uses the embedded ELO table and the logistic transform <code>1/(1+10^(-ΔELO/(400×upset)))</code>, where <em>upset</em> is the Upset-factor slider. It otherwise ignores injuries, rest, travel, home advantage, and styles except as reflected in the rating. Source: Economics Observatory 2026 knockout preview.
       </div>
       <p class="source-note"><strong>Betting market &amp; cards &amp; news:</strong> the Recent-data layer pulls DraftKings moneylines (converted to a “to advance” probability), yellow/red cards, and match/league news headlines from ESPN's public summary endpoint. With the layer on, the shown probability is <code>(1−w)·ELO + w·market</code>.</p>
-      <p class="source-note"><strong>Squad payroll:</strong> each squad's estimated combined annual player salaries (wage bill) is shown on every card. Turn on the <strong>Payroll</strong> layer to fold it into the pick: the richer squad is favored in proportion to its share of the two teams' combined wage bill, blended as <code>(1−p)·pick + p·payrollShare</code> where <em>p</em> is the Payroll-weight slider. Figures are illustrative estimates compiled from public club-wage data, not official.</p>
+      <p class="source-note"><strong>Squad value:</strong> each squad's total market value (from <a href="https://www.transfermarkt.com" target="_blank" rel="noopener">Transfermarkt</a>, 2026 World Cup) is shown on every card. Turn on the <strong>Squad value</strong> layer to fold it into the pick: the more valuable squad is favored in proportion to its share of the two teams' combined value, blended as <code>(1−p)·pick + p·valueShare</code> where <em>p</em> is the Value-weight slider. Market values fluctuate; treat them as a snapshot, not a live figure.</p>
       <p class="source-note"><strong>Live scoreboard:</strong> the page first reads <code>scoreboard.json</code> from the repo, then ESPN's public World Cup scoreboard feed, then the embedded snapshot. Official fixtures/results should be checked against FIFA's page.</p>
       <ul class="source-list source-note">
         <li><a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums" target="_blank" rel="noopener">FIFA — official schedule / results</a></li>
@@ -398,17 +403,16 @@
     "ghana": 1036, "bosnia and herzegovina": 1062
   };
 
-  // Estimated combined annual player salaries (first-team squad wage bill), in USD millions.
-  // Illustrative figures compiled from public club-wage estimates for each squad's players.
-  const PAYROLL_SOURCE_LABEL = "Estimated squad wage bills (combined annual player salaries), USD";
+  // Total squad market value per nation (Transfermarkt, 2026 World Cup), in EUR millions.
+  const PAYROLL_SOURCE_LABEL = "Transfermarkt squad market value (2026 World Cup)";
   const teamPayroll = {
-    "england": 382, "france": 371, "spain": 338, "portugal": 301, "brazil": 289,
-    "germany": 281, "argentina": 252, "netherlands": 238, "belgium": 201, "colombia": 152,
-    "croatia": 141, "morocco": 129, "switzerland": 121, "mexico": 111, "united states": 106,
-    "senegal": 114, "austria": 99, "norway": 95, "ivory coast": 90, "sweden": 89,
-    "japan": 84, "ecuador": 79, "algeria": 84, "egypt": 71, "bosnia and herzegovina": 65,
-    "ghana": 60, "canada": 55, "dr congo": 54, "paraguay": 49, "australia": 45,
-    "south africa": 30, "cape verde": 22
+    "france": 1520, "england": 1360, "spain": 1220, "portugal": 1010, "germany": 947,
+    "brazil": 928, "argentina": 808, "netherlands": 754, "norway": 590, "belgium": 548,
+    "ivory coast": 522, "senegal": 478, "morocco": 448, "sweden": 406, "croatia": 387,
+    "united states": 386, "ecuador": 369, "switzerland": 333, "colombia": 302, "japan": 271,
+    "algeria": 257, "austria": 245, "ghana": 235, "canada": 199, "mexico": 192,
+    "paraguay": 154, "bosnia and herzegovina": 146, "dr congo": 144, "egypt": 116, "australia": 77,
+    "south africa": 49, "cape verde": 49
   };
 
   const sourceModelProgress = {
@@ -752,12 +756,12 @@
   function getRating(teamObj) { return eloRatings[norm(teamObj?.name)]; }
   function getPayroll(teamObj) { return teamPayroll[norm(teamObj?.name)]; }
   function pct(x) { return `${Math.round(x * 100)}%`; }
-  // Format a squad wage bill given in USD millions, e.g. 382 -> "$382M", 1200 -> "$1.2B".
+  // Format a squad value given in EUR millions, e.g. 386 -> "€386M", 1520 -> "€1.52B".
   function formatMoney(m) {
     if (!Number.isFinite(m)) return "—";
-    return m >= 1000 ? `$${(m / 1000).toFixed(1)}B` : `$${Math.round(m)}M`;
+    return m >= 1000 ? `€${(m / 1000).toFixed(2)}B` : `€${Math.round(m)}M`;
   }
-  // Payroll-implied win share: the richer squad is the favorite in proportion to its wage bill.
+  // Value-implied win share: the more valuable squad is the favorite in proportion to its value.
   function payrollProbability(teamA, teamB) {
     const pa = getPayroll(teamA), pb = getPayroll(teamB);
     if (!Number.isFinite(pa) || !Number.isFinite(pb) || pa + pb <= 0) return null;
@@ -916,6 +920,8 @@
     const type = status.type || {};
     match.state = type.state || (type.completed ? "post" : "pre");
     match.detail = type.shortDetail || type.detail || type.description || "Scheduled";
+    match.clock = status.displayClock || "";        // live match minute, e.g. "63'" or "45'+2'"
+    match.statusName = type.name || "";              // e.g. STATUS_FIRST_HALF, STATUS_HALFTIME
     match.source = "live";
     match.espnId = String(event.id || "");
     match.espnLink = event.links?.[0]?.href || null;
@@ -1172,7 +1178,7 @@
     const teams = project ? m.slots.map(resolveProjectedSlot) : m.slots.map(resolveOfficialSlot);
     const live = m.state === "in";
     const score = m.scores.every(s => s !== null) ? `${m.scores[0]}–${m.scores[1]}` : "";
-    const status = live ? (score || "LIVE") : "";
+    const status = live ? ([score, liveClockLabel(m)].filter(Boolean).join(" · ") || "LIVE") : "";
     const b = MATCH_BRIEFS[m.id];
     const predHtml = (project && m.prediction)
       ? `<span class="bc-elo">ELO: ${escapeHtml(m.prediction.winner.name)} ${escapeHtml(pct(m.prediction.pWinner))}</span>` : "";
@@ -1282,6 +1288,14 @@
       <span class="small">Win-it-all % multiplies each round's ELO edge along the projected path (assumes the projected opponents). Updates with picks, results, and the upset slider.</span>`;
   }
 
+  // Live match minute for in-progress games, e.g. "63'", "45'+2'", or "HT" at the break.
+  function liveClockLabel(m) {
+    if (m.state !== "in") return "";
+    const name = (m.statusName || "").toUpperCase();
+    if (name.includes("HALFTIME")) return "HT";
+    return m.clock || m.detail || "LIVE";
+  }
+
   // Compact per-team wage bill shown on each bracket card (only when both squads are known).
   function payrollLine(teams) {
     if (!teams || teams.length !== 2) return "";
@@ -1289,7 +1303,7 @@
     if (!Number.isFinite(pa) || !Number.isFinite(pb)) return "";
     const a = `${escapeHtml(teams[0].abbr || teams[0].name)} ${escapeHtml(formatMoney(pa))}`;
     const b = `${escapeHtml(teams[1].abbr || teams[1].name)} ${escapeHtml(formatMoney(pb))}`;
-    return `<div class="payroll" title="Estimated combined annual player salaries">💰 ${a} · ${b}</div>`;
+    return `<div class="payroll" title="Total Transfermarkt squad market value">💰 ${a} · ${b}</div>`;
   }
 
   function renderGame(m) {
@@ -1317,9 +1331,13 @@
       ? `<div class="${projClass}">▸ ${escapeHtml(m.prediction.winner.name)} ${escapeHtml(pct(m.prediction.pWinner))}</div>`
       : "";
     const payLine = payrollLine(teams);
+    const liveMin = liveClockLabel(m);
+    const whenHtml = (isLive && liveMin)
+      ? `<div class="when live-min"><span class="live-pulse"></span>${escapeHtml(liveMin)}</div>`
+      : `<div class="when">${escapeHtml(formatDate(m.kickoff, {compact:true}))}</div>`;
     return `<article class="game ${cardClass}" data-match-id="${escapeAttr(m.id)}">
       <span class="chev">ⓘ</span>
-      <div class="when">${escapeHtml(formatDate(m.kickoff, {compact:true}))}</div>
+      ${whenHtml}
       ${teamsHtml}
       ${payLine}
       ${proj}
@@ -1382,8 +1400,11 @@
       : `<div class="h2h"><strong>Head-to-head:</strong> <span class="small">available once both teams are confirmed.</span></div>`;
     const link = m.espnLink ? `<p class="small" style="margin-top:8px;"><a href="${escapeAttr(m.espnLink)}" target="_blank" rel="noopener">ESPN match center →</a></p>` : "";
     const eloHtml = project ? renderElo(m) : `<div class="elo"><span class="small">Turn on <strong>Project</strong> to see the ELO prediction.</span></div>`;
+    const liveMin = liveClockLabel(m);
+    const liveBadge = (m.state === "in" && liveMin)
+      ? ` <span class="live-badge"><span class="live-pulse"></span>LIVE ${escapeHtml(liveMin)}</span>` : "";
     return `<h3 style="margin:0 0 4px;">${escapeHtml(m.stage)}</h3>
-      <div class="small" style="margin-bottom:10px;">${escapeHtml(formatDate(m.kickoff, {tz:true}))}</div>
+      <div class="small" style="margin-bottom:10px;">${escapeHtml(formatDate(m.kickoff, {tz:true}))}${liveBadge}</div>
       ${rows}
       ${renderBrief(m)}
       ${eloHtml}
@@ -1408,7 +1429,7 @@
     const ratingsText = `${teams[0].name} ${p.ra} · ${teams[1].name} ${p.rb}`;
     const label = m.state === "post" ? "Pre-match pick" : m.userPicked ? "Your pick" : m.implied ? "Implied (forced by a later pick)" : (p.blended || p.payrollBlended) ? "Blended pick" : "ELO pick";
     const blendNote = p.blended ? ` <span class="blend-tag">(ELO ${escapeHtml(pct(p.eloPWinner))} blended w/ market ${escapeHtml(pct(marketWeight))})</span>` : "";
-    const payNote = p.payrollBlended ? ` <span class="blend-tag">(+ payroll ${escapeHtml(pct(payrollWeight))} → ${escapeHtml(pct(p.payrollPWinner))})</span>` : "";
+    const payNote = p.payrollBlended ? ` <span class="blend-tag">(+ squad value ${escapeHtml(pct(payrollWeight))} → ${escapeHtml(pct(p.payrollPWinner))})</span>` : "";
     return `<div class="elo">
       <strong>${escapeHtml(label)}:</strong> ${escapeHtml(p.winner.name)} ${escapeHtml(pct(p.pWinner))} <span class="small">ΔELO ${p.diff >= 0 ? "+" : ""}${escapeHtml(Math.round(p.diff))}</span>${blendNote}${payNote}<br>
       <span class="small">${escapeHtml(ratingsText)}${p.external ? ` · ${escapeHtml(p.external)}` : ""}</span>
@@ -1416,25 +1437,25 @@
     </div>`;
   }
 
-  // Squad-payroll panel in the match popup: each team's wage bill, the payroll-implied edge,
-  // and whether that edge is currently folded into the prediction (Payroll layer on).
+  // Squad-value panel in the match popup: each team's Transfermarkt market value, the
+  // value-implied edge, and whether that edge is currently folded into the prediction.
   function renderPayroll(m, teams) {
     if (!teams || teams.length !== 2 || teams.some(t => t?.placeholder)) return "";
     const pp = payrollProbability(teams[0], teams[1]);
-    if (!pp) return `<div class="pay"><strong>Squad payroll:</strong> <span class="small">wage bill not available for one of these squads.</span></div>`;
+    if (!pp) return `<div class="pay"><strong>Squad value:</strong> <span class="small">market value not available for one of these squads.</span></div>`;
     const favIdx = pp.pA >= pp.pB ? 0 : 1;
     const favP = favIdx === 0 ? pp.pA : pp.pB;
     const width = Math.max(3, Math.min(97, Math.round(pp.pA * 100)));
     const active = payrollOn && payrollWeight > 0;
     const note = active
       ? `<span class="blend-tag">folded into the pick at ${escapeHtml(pct(payrollWeight))} weight</span>`
-      : `<span class="small">turn on <strong>Payroll</strong> (top bar) to use this in the pick</span>`;
+      : `<span class="small">turn on <strong>Squad value</strong> (top bar) to use this in the pick</span>`;
     return `<div class="pay">
-      <strong>Squad payroll</strong> <span class="small">(est. combined annual player salaries)</span><br>
+      <strong>Squad value</strong> <span class="small">(Transfermarkt market value)</span><br>
       <div class="pay-row"><span>${escapeHtml(teams[0].name)}</span><span>${escapeHtml(formatMoney(pp.payrollA))}</span></div>
       <div class="pay-row"><span>${escapeHtml(teams[1].name)}</span><span>${escapeHtml(formatMoney(pp.payrollB))}</span></div>
-      <div class="paybar" title="${escapeAttr(teams[0].name)} ${pct(pp.pA)} of combined wage bill"><span style="width:${width}%"></span></div>
-      <div class="small" style="margin-top:6px;">Payroll favors <strong>${escapeHtml(teams[favIdx].name)}</strong> ${escapeHtml(pct(favP))} by wage-bill share · ${note}</div>
+      <div class="paybar" title="${escapeAttr(teams[0].name)} ${pct(pp.pA)} of combined squad value"><span style="width:${width}%"></span></div>
+      <div class="small" style="margin-top:6px;">Value favors <strong>${escapeHtml(teams[favIdx].name)}</strong> ${escapeHtml(pct(favP))} by market-value share · ${note}</div>
     </div>`;
   }
 
@@ -1516,7 +1537,7 @@
   function setPayrollMode(on) {
     payrollOn = on;
     const btn = document.getElementById("payrollBtn");
-    btn.textContent = `Payroll: ${on ? "on" : "off"}`;
+    btn.textContent = `Squad value: ${on ? "on" : "off"}`;
     btn.classList.toggle("toggle-on", on);
     document.getElementById("payrollControls").classList.toggle("hidden", !on);
     recompute();
