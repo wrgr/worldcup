@@ -436,7 +436,7 @@
     "cote d ivoire": "ivory coast", "cote divoire": "ivory coast", "côte d’ivoire": "ivory coast", "ivory coast": "ivory coast",
     "congo dr": "dr congo", "congo, dr": "dr congo", "dr congo": "dr congo", "dem rep of congo": "dr congo", "democratic republic of congo": "dr congo",
     "cabo verde": "cape verde", "cape verde": "cape verde",
-    "bosnia herz": "bosnia and herzegovina", "bosnia hz": "bosnia and herzegovina", "bosnia-herzegovina": "bosnia and herzegovina", "bosnia and herzegovina": "bosnia and herzegovina",
+    "bosnia herz": "bosnia and herzegovina", "bosnia hz": "bosnia and herzegovina", "bosnia herzegovina": "bosnia and herzegovina", "bosnia and herzegovina": "bosnia and herzegovina",
     "turkiye": "turkey", "türkiye": "turkey", "czech republic": "czechia", "ir iran": "iran"
   }));
 
@@ -468,42 +468,42 @@
   ]);
 
   const baseMatches = [
-    { id:"53452545", key:"m73", round:"r32", kickoff:"2026-06-28T19:00:00Z", stage:"Round of 32", slots:[team("South Africa","RSA"), team("Canada","CAN")], next:"53452511", fallback:{state:"post", detail:"Full time", scores:[0,1], winner:"Canada"}},
-    { id:"53452557", key:"m76", round:"r32", kickoff:"2026-06-29T17:00:00Z", stage:"Round of 32", slots:[team("Brazil","BRA"), team("Japan","JPN")], next:"53452517"},
-    { id:"53452541", key:"m74", round:"r32", kickoff:"2026-06-29T20:30:00Z", stage:"Round of 32", slots:[team("Germany","GER"), team("Paraguay","PAR")], next:"53452509"},
-    { id:"53452547", key:"m75", round:"r32", kickoff:"2026-06-30T01:00:00Z", stage:"Round of 32", slots:[team("Netherlands","NED"), team("Morocco","MAR")], next:"53452511"},
-    { id:"53452561", key:"m78", round:"r32", kickoff:"2026-06-30T17:00:00Z", stage:"Round of 32", slots:[team("Ivory Coast","CIV"), team("Norway","NOR")], next:"53452517"},
-    { id:"53452543", key:"m77", round:"r32", kickoff:"2026-06-30T21:00:00Z", stage:"Round of 32", slots:[team("France","FRA"), team("Sweden","SWE")], next:"53452509"},
-    { id:"53452563", key:"m79", round:"r32", kickoff:"2026-07-01T01:00:00Z", stage:"Round of 32", slots:[team("Mexico","MEX"), team("Ecuador","ECU")], next:"53452519"},
-    { id:"53452565", key:"m80", round:"r32", kickoff:"2026-07-01T16:00:00Z", stage:"Round of 32", slots:[team("England","ENG"), team("DR Congo","COD")], next:"53452519"},
-    { id:"53452555", key:"m82", round:"r32", kickoff:"2026-07-01T20:00:00Z", stage:"Round of 32", slots:[team("Belgium","BEL"), team("Senegal","SEN")], next:"53452515"},
-    { id:"53452553", key:"m81", round:"r32", kickoff:"2026-07-02T00:00:00Z", stage:"Round of 32", slots:[team("United States","USA"), team("Bosnia and Herzegovina","BIH")], next:"53452515"},
-    { id:"53452551", key:"m84", round:"r32", kickoff:"2026-07-02T19:00:00Z", stage:"Round of 32", slots:[team("Spain","ESP"), team("Austria","AUT")], next:"53452513"},
-    { id:"53452549", key:"m83", round:"r32", kickoff:"2026-07-02T23:00:00Z", stage:"Round of 32", slots:[team("Portugal","POR"), team("Croatia","CRO")], next:"53452513"},
-    { id:"53452505", key:"m85", round:"r32", kickoff:"2026-07-03T03:00:00Z", stage:"Round of 32", slots:[team("Switzerland","SUI"), team("Algeria","DZA")], next:"53452523"},
-    { id:"53452503", key:"m88", round:"r32", kickoff:"2026-07-03T18:00:00Z", stage:"Round of 32", slots:[team("Australia","AUS"), team("Egypt","EGY")], next:"53452521"},
-    { id:"53452569", key:"m86", round:"r32", kickoff:"2026-07-03T22:00:00Z", stage:"Round of 32", slots:[team("Argentina","ARG"), team("Cape Verde","CPV")], next:"53452521"},
-    { id:"53452507", key:"m87", round:"r32", kickoff:"2026-07-04T01:30:00Z", stage:"Round of 32", slots:[team("Colombia","COL"), team("Ghana","GHA")], next:"53452523"},
+    { id:"53452545", key:"m73", espn:"760486", round:"r32", kickoff:"2026-06-28T19:00:00Z", stage:"Round of 32", slots:[team("South Africa","RSA"), team("Canada","CAN")], next:"53452511", fallback:{state:"post", detail:"Full time", scores:[0,1], winner:"Canada"}},
+    { id:"53452557", key:"m76", espn:"760487", round:"r32", kickoff:"2026-06-29T17:00:00Z", stage:"Round of 32", slots:[team("Brazil","BRA"), team("Japan","JPN")], next:"53452517", fallback:{state:"post", detail:"Full time", scores:[2,1], winner:"Brazil"}},
+    { id:"53452541", key:"m74", espn:"760489", round:"r32", kickoff:"2026-06-29T20:30:00Z", stage:"Round of 32", slots:[team("Germany","GER"), team("Paraguay","PAR")], next:"53452509", fallback:{state:"post", detail:"1–1, Paraguay won on penalties", scores:[1,1], winner:"Paraguay"}},
+    { id:"53452547", key:"m75", espn:"760488", round:"r32", kickoff:"2026-06-30T01:00:00Z", stage:"Round of 32", slots:[team("Netherlands","NED"), team("Morocco","MAR")], next:"53452511", fallback:{state:"post", detail:"1–1, Morocco won on penalties", scores:[1,1], winner:"Morocco"}},
+    { id:"53452561", key:"m78", espn:"760490", round:"r32", kickoff:"2026-06-30T17:00:00Z", stage:"Round of 32", slots:[team("Ivory Coast","CIV"), team("Norway","NOR")], next:"53452517", fallback:{state:"post", detail:"Full time", scores:[1,2], winner:"Norway"}},
+    { id:"53452543", key:"m77", espn:"760492", round:"r32", kickoff:"2026-06-30T21:00:00Z", stage:"Round of 32", slots:[team("France","FRA"), team("Sweden","SWE")], next:"53452509", fallback:{state:"post", detail:"Full time", scores:[3,0], winner:"France"}},
+    { id:"53452563", key:"m79", espn:"760491", round:"r32", kickoff:"2026-07-01T01:00:00Z", stage:"Round of 32", slots:[team("Mexico","MEX"), team("Ecuador","ECU")], next:"53452519", fallback:{state:"post", detail:"Full time", scores:[2,0], winner:"Mexico"}},
+    { id:"53452565", key:"m80", espn:"760495", round:"r32", kickoff:"2026-07-01T16:00:00Z", stage:"Round of 32", slots:[team("England","ENG"), team("DR Congo","COD")], next:"53452519", fallback:{state:"post", detail:"Full time", scores:[2,1], winner:"England"}},
+    { id:"53452555", key:"m82", espn:"760493", round:"r32", kickoff:"2026-07-01T20:00:00Z", stage:"Round of 32", slots:[team("Belgium","BEL"), team("Senegal","SEN")], next:"53452515", fallback:{state:"post", detail:"3–2 after extra time", scores:[3,2], winner:"Belgium"}},
+    { id:"53452553", key:"m81", espn:"760494", round:"r32", kickoff:"2026-07-02T00:00:00Z", stage:"Round of 32", slots:[team("United States","USA"), team("Bosnia and Herzegovina","BIH")], next:"53452515", fallback:{state:"post", detail:"Full time", scores:[2,0], winner:"United States"}},
+    { id:"53452551", key:"m84", espn:"760497", round:"r32", kickoff:"2026-07-02T19:00:00Z", stage:"Round of 32", slots:[team("Spain","ESP"), team("Austria","AUT")], next:"53452513", fallback:{state:"post", detail:"Full time", scores:[3,0], winner:"Spain"}},
+    { id:"53452549", key:"m83", espn:"760496", round:"r32", kickoff:"2026-07-02T23:00:00Z", stage:"Round of 32", slots:[team("Portugal","POR"), team("Croatia","CRO")], next:"53452513", fallback:{state:"post", detail:"Full time", scores:[2,1], winner:"Portugal"}},
+    { id:"53452505", key:"m85", espn:"760498", round:"r32", kickoff:"2026-07-03T03:00:00Z", stage:"Round of 32", slots:[team("Switzerland","SUI"), team("Algeria","DZA")], next:"53452523", fallback:{state:"post", detail:"Full time", scores:[2,0], winner:"Switzerland"}},
+    { id:"53452503", key:"m88", espn:"760499", round:"r32", kickoff:"2026-07-03T18:00:00Z", stage:"Round of 32", slots:[team("Australia","AUS"), team("Egypt","EGY")], next:"53452521", fallback:{state:"post", detail:"1–1, Egypt won on penalties", scores:[1,1], winner:"Egypt"}},
+    { id:"53452569", key:"m86", espn:"760500", round:"r32", kickoff:"2026-07-03T22:00:00Z", stage:"Round of 32", slots:[team("Argentina","ARG"), team("Cape Verde","CPV")], next:"53452521", fallback:{state:"post", detail:"3–2 after extra time", scores:[3,2], winner:"Argentina"}},
+    { id:"53452507", key:"m87", espn:"760501", round:"r32", kickoff:"2026-07-04T01:30:00Z", stage:"Round of 32", slots:[team("Colombia","COL"), team("Ghana","GHA")], next:"53452523", fallback:{state:"post", detail:"Full time", scores:[1,0], winner:"Colombia"}},
 
-    { id:"53452511", key:"m89", round:"r16", kickoff:"2026-07-04T17:00:00Z", stage:"Round of 16", slots:[from("53452545"), from("53452547")], next:"53452525"},
-    { id:"53452509", key:"m90", round:"r16", kickoff:"2026-07-04T21:00:00Z", stage:"Round of 16", slots:[from("53452541"), from("53452543")], next:"53452525"},
-    { id:"53452517", key:"m91", round:"r16", kickoff:"2026-07-05T20:00:00Z", stage:"Round of 16", slots:[from("53452557"), from("53452561")], next:"53452529"},
-    { id:"53452519", key:"m92", round:"r16", kickoff:"2026-07-06T00:00:00Z", stage:"Round of 16", slots:[from("53452563"), from("53452565")], next:"53452529"},
-    { id:"53452513", key:"m93", round:"r16", kickoff:"2026-07-06T19:00:00Z", stage:"Round of 16", slots:[from("53452549"), from("53452551")], next:"53452527"},
-    { id:"53452515", key:"m94", round:"r16", kickoff:"2026-07-07T00:00:00Z", stage:"Round of 16", slots:[from("53452553"), from("53452555")], next:"53452527"},
-    { id:"53452521", key:"m95", round:"r16", kickoff:"2026-07-07T16:00:00Z", stage:"Round of 16", slots:[from("53452569"), from("53452503")], next:"53452531"},
-    { id:"53452523", key:"m96", round:"r16", kickoff:"2026-07-07T20:00:00Z", stage:"Round of 16", slots:[from("53452505"), from("53452507")], next:"53452531"},
+    { id:"53452511", key:"m89", espn:"760502", round:"r16", kickoff:"2026-07-04T17:00:00Z", stage:"Round of 16", slots:[from("53452545"), from("53452547")], next:"53452525"},
+    { id:"53452509", key:"m90", espn:"760503", round:"r16", kickoff:"2026-07-04T21:00:00Z", stage:"Round of 16", slots:[from("53452541"), from("53452543")], next:"53452525"},
+    { id:"53452517", key:"m91", espn:"760504", round:"r16", kickoff:"2026-07-05T20:00:00Z", stage:"Round of 16", slots:[from("53452557"), from("53452561")], next:"53452529"},
+    { id:"53452519", key:"m92", espn:"760505", round:"r16", kickoff:"2026-07-06T00:00:00Z", stage:"Round of 16", slots:[from("53452563"), from("53452565")], next:"53452529"},
+    { id:"53452513", key:"m93", espn:"760506", round:"r16", kickoff:"2026-07-06T19:00:00Z", stage:"Round of 16", slots:[from("53452549"), from("53452551")], next:"53452527"},
+    { id:"53452515", key:"m94", espn:"760507", round:"r16", kickoff:"2026-07-07T00:00:00Z", stage:"Round of 16", slots:[from("53452553"), from("53452555")], next:"53452527"},
+    { id:"53452521", key:"m95", espn:"760509", round:"r16", kickoff:"2026-07-07T16:00:00Z", stage:"Round of 16", slots:[from("53452569"), from("53452503")], next:"53452531"},
+    { id:"53452523", key:"m96", espn:"760508", round:"r16", kickoff:"2026-07-07T20:00:00Z", stage:"Round of 16", slots:[from("53452505"), from("53452507")], next:"53452531"},
 
-    { id:"53452525", key:"m97", round:"qf", kickoff:"2026-07-09T20:00:00Z", stage:"Quarterfinal", slots:[from("53452511"), from("53452509")], next:"53452533"},
-    { id:"53452527", key:"m98", round:"qf", kickoff:"2026-07-10T19:00:00Z", stage:"Quarterfinal", slots:[from("53452513"), from("53452515")], next:"53452533"},
-    { id:"53452529", key:"m99", round:"qf", kickoff:"2026-07-11T21:00:00Z", stage:"Quarterfinal", slots:[from("53452517"), from("53452519")], next:"53452535"},
-    { id:"53452531", key:"m100", round:"qf", kickoff:"2026-07-12T01:00:00Z", stage:"Quarterfinal", slots:[from("53452521"), from("53452523")], next:"53452535"},
+    { id:"53452525", key:"m97", espn:"760510", round:"qf", kickoff:"2026-07-09T20:00:00Z", stage:"Quarterfinal", slots:[from("53452511"), from("53452509")], next:"53452533"},
+    { id:"53452527", key:"m98", espn:"760511", round:"qf", kickoff:"2026-07-10T19:00:00Z", stage:"Quarterfinal", slots:[from("53452513"), from("53452515")], next:"53452533"},
+    { id:"53452529", key:"m99", espn:"760512", round:"qf", kickoff:"2026-07-11T21:00:00Z", stage:"Quarterfinal", slots:[from("53452517"), from("53452519")], next:"53452535"},
+    { id:"53452531", key:"m100", espn:"760513", round:"qf", kickoff:"2026-07-12T01:00:00Z", stage:"Quarterfinal", slots:[from("53452521"), from("53452523")], next:"53452535"},
 
-    { id:"53452533", key:"m101", round:"sf", kickoff:"2026-07-14T19:00:00Z", stage:"Semifinal", slots:[from("53452525"), from("53452527")], next:"53452537", loserNext:"53452539"},
-    { id:"53452535", key:"m102", round:"sf", kickoff:"2026-07-15T19:00:00Z", stage:"Semifinal", slots:[from("53452529"), from("53452531")], next:"53452537", loserNext:"53452539"},
+    { id:"53452533", key:"m101", espn:"760514", round:"sf", kickoff:"2026-07-14T19:00:00Z", stage:"Semifinal", slots:[from("53452525"), from("53452527")], next:"53452537", loserNext:"53452539"},
+    { id:"53452535", key:"m102", espn:"760515", round:"sf", kickoff:"2026-07-15T19:00:00Z", stage:"Semifinal", slots:[from("53452529"), from("53452531")], next:"53452537", loserNext:"53452539"},
 
-    { id:"53452539", key:"m103", round:"finals", kickoff:"2026-07-18T21:00:00Z", stage:"Third-place playoff", slots:[loserFrom("53452533"), loserFrom("53452535")]},
-    { id:"53452537", key:"m104", round:"finals", kickoff:"2026-07-19T19:00:00Z", stage:"Final", slots:[from("53452533"), from("53452535")]}
+    { id:"53452539", key:"m103", espn:"760516", round:"finals", kickoff:"2026-07-18T21:00:00Z", stage:"Third-place playoff", slots:[loserFrom("53452533"), loserFrom("53452535")]},
+    { id:"53452537", key:"m104", espn:"760517", round:"finals", kickoff:"2026-07-19T19:00:00Z", stage:"Final", slots:[from("53452533"), from("53452535")]}
   ];
 
   // Columns ordered top-to-bottom so each match sits between the two it feeds from.
@@ -683,6 +683,10 @@
       m.state = "pre"; m.detail = "Scheduled"; m.scores = [null, null]; m.source = "snapshot";
       m.winnerIndex = undefined; m.winnerTeam = undefined; m.loserTeam = undefined;
       m.predictedWinnerIndex = undefined; m.predictedWinnerTeam = undefined; m.prediction = undefined;
+      // Seed the real ESPN id/link from the bracket so match-center links and the odds/cards
+      // layer work from the embedded snapshot too; live data overwrites these when it loads.
+      m.espnId = m.espn || "";
+      m.espnLink = m.espn ? `https://www.espn.com/soccer/match/_/gameId/${m.espn}` : null;
       if (m.fallback) applyFallback(m);
     }
   }
@@ -878,8 +882,11 @@
   }
 
   function findMatchForEvent(event) {
-    const direct = byId.get(String(event.id));
+    const eid = String(event.id || "");
+    const direct = byId.get(eid);
     if (direct) return direct;
+    const byEspn = matches.find(m => m.espn && m.espn === eid);   // real ESPN id baked into the bracket
+    if (byEspn) return byEspn;
     const uidDigits = String(event.uid || "").match(/(\d{6,})$/)?.[1];
     if (uidDigits && byId.has(uidDigits)) return byId.get(uidDigits);
     const comp = event.competitions?.[0];
@@ -926,9 +933,12 @@
   }
 
   async function fetchScoreboardData() {
+    // Live ESPN first so a live bracket shows real-time state; the committed cache is a
+    // same-origin fallback (refreshed by the scoreboard GitHub Action) for when ESPN is
+    // unreachable from the visitor's browser; the embedded snapshot is the last resort.
     const sources = [
-      { label: "Repo scoreboard cache", url: LOCAL_SCOREBOARD_URL },
-      { label: "ESPN direct scoreboard", url: ESPN_SCOREBOARD_URL }
+      { label: "ESPN direct scoreboard", url: ESPN_SCOREBOARD_URL },
+      { label: "Repo scoreboard cache", url: LOCAL_SCOREBOARD_URL }
     ];
     let lastError = null;
     for (const src of sources) {

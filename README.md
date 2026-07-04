@@ -20,16 +20,19 @@ No build step and no server — everything runs in the browser from a single HTM
 ## Files
 
 - `index.html` — the entire app (markup, styles, and logic). This is the GitHub Pages entry point, and also opens directly from disk (`file://`).
-- `scoreboard.json` — optional scoreboard cache read first on load. The committed file is an empty placeholder; the page falls back to ESPN live if it has no events.
+- `scoreboard.json` — a same-origin fallback cache of ESPN's scoreboard, refreshed automatically by the workflow below. Used only when the visitor's browser can't reach ESPN directly.
+- `.github/workflows/refresh-scoreboard.yml` — refreshes `scoreboard.json` from ESPN every 2 hours (and on manual dispatch).
 - `.nojekyll` — tells GitHub Pages to serve files as-is (no Jekyll processing).
 
 ## How live updates work
 
 On load (and every 2 hours after), the page tries data sources in order:
 
-1. `scoreboard.json` in the repo root — a cached snapshot, if you choose to populate it.
-2. ESPN's public World Cup scoreboard feed, fetched directly from the browser.
-3. The embedded knockout snapshot baked into the page (so the bracket always renders).
+1. ESPN's public World Cup scoreboard feed, fetched directly from the browser — the live, real-time source (keyless and CORS-open, so it works straight from GitHub Pages).
+2. `scoreboard.json` in the repo root — a same-origin cache refreshed every 2 hours by the GitHub Action, used as a fallback when ESPN is unreachable from the browser.
+3. The embedded knockout snapshot baked into the page — carries the real Round-of-32 results so the current bracket always renders, even fully offline.
+
+Live events are matched to the bracket by ESPN event id (baked into each match) and by team name + kickoff time as a fallback, so results flow in even if ESPN renumbers a fixture.
 
 Official results always override ELO predictions. All unplayed/future matches show as **SCHEDULED**. Cross-check official fixtures against [FIFA's schedule page](https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums).
 
