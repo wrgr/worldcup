@@ -10,6 +10,8 @@ A single-file, static GitHub Pages site for the World Cup 2026 knockout bracket:
 - ELO-based predictions for unresolved games, recomputed after each result
 - **Predict mode** — click teams to advance your own picks and a slider to tune how many upsets the model expects
 - **Recent-data layer** — pulls live betting odds, cards, and news from ESPN and blends the market into each prediction
+- **Squad payroll** — each team's estimated combined annual player salaries shown on every card, with an optional layer that folds the wage bill into the prediction
+- centered on the **Round of 16** (the completed Round of 32 columns are hidden; their results still feed the R16 cards)
 - recent head-to-head notes where embedded lookups exist
 - browser auto-refresh every 2 hours
 
@@ -50,6 +52,12 @@ Click **Recent data** in the header to pull, per match, from ESPN's public summa
 - **News** — recent ESPN headlines for the match (team news, injuries, previews) as links.
 
 Only matches ESPN currently lists with both teams known carry odds (i.e. the live round); future rounds fill in as teams are decided. Requests are fetched on demand when you enable the layer and throttled four at a time. If ESPN ever changes or blocks the endpoint, the rest of the page is unaffected.
+
+## Squad payroll
+
+Every card shows each squad's **estimated combined annual player salaries** (its wage bill) — a rough proxy for how expensively assembled the team is. Tap a match for a payroll panel that breaks out both teams and the wage-bill share.
+
+Click **Payroll** in the header to fold it into the pick. The richer squad is favored in proportion to its share of the two teams' combined wage bill, and the **Payroll weight** slider blends it in: `0%` ignores payroll (pure ELO/market pick), `100%` picks purely by wage bill. The blend is applied on top of the ELO (and, if on, market) probability. Figures are illustrative estimates compiled from public club-wage data, not official.
 
 ## Deploy to GitHub Pages (deploy from branch)
 

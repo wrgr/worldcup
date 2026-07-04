@@ -175,6 +175,14 @@
     button.secondary { background: rgba(255,255,255,.08); color: var(--text); box-shadow: none; border: 1px solid rgba(255,255,255,.16); font-weight: 700; }
     button.toggle-on { background: var(--pred); color: #160a2e; }
     button#recentBtn.toggle-on { background: var(--accent2); color: #04222b; }
+    button#payrollBtn.toggle-on { background: var(--good); color: #06210f; }
+    .payroll { margin-top: 4px; font-size: 9.5px; color: var(--good); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pay { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); font-size: 12px; color: #d9f7e5; line-height: 1.4; }
+    .pay strong { color: var(--text); }
+    .pay-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 3px; }
+    .paybar { margin-top: 6px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+    .paybar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--good), var(--accent2)); border-radius: 999px; }
+    .bc-pay { color: var(--good); }
     .recent { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); font-size: 11.5px; color: var(--muted); line-height: 1.45; }
     .recent .market { color: #d9e7ff; }
     .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
@@ -279,6 +287,7 @@
     <button id="projectBtn" type="button" class="secondary">Project: off</button>
     <button id="predictBtn" type="button" class="secondary">Predict mode: off</button>
     <button id="recentBtn" type="button" class="secondary">Recent data: off</button>
+    <button id="payrollBtn" type="button" class="secondary">Payroll: off</button>
   </div>
   <div id="recentControls" class="controls-row hidden">
     <span class="pill"><span id="recentStatus">Fetches live odds, cards & news from ESPN</span></span>
@@ -289,6 +298,16 @@
       <span id="marketVal">50%</span>
     </span>
     <span class="small">0% = pure ELO · 100% = pure betting market. Cards and news shown per match where available.</span>
+  </div>
+  <div id="payrollControls" class="controls-row hidden">
+    <span class="pill">💰 Squad payroll = combined annual player salaries</span>
+    <span id="payrollHint" class="pill recent-hint hidden">Turn on <strong>Project</strong> (or Predict mode) to see payroll fold into the bracket odds.</span>
+    <span class="slider-wrap">
+      <label for="payrollSlider">Payroll weight</label>
+      <input id="payrollSlider" type="range" min="0" max="1" step="0.05" value="0.5" />
+      <span id="payrollVal">50%</span>
+    </span>
+    <span class="small">0% = ignore payroll · 100% = pick purely by wage bill. Payroll always shows on the cards regardless.</span>
   </div>
   <div id="predictControls" class="controls-row hidden">
     <span class="pill"><span id="pickCount">0</span> manual picks</span>
@@ -302,7 +321,7 @@
   </div>
 </header>
 <main>
-  <p class="small" id="introNote" style="margin:0 0 10px;">Tap any match for an AI preview, ELO edge, betting market, and head-to-head. Press <strong>Project</strong> or <strong>Predict mode</strong> (top bar) to fill in winners. Sources are at the bottom.</p>
+  <p class="small" id="introNote" style="margin:0 0 10px;">Tap any match for an AI preview, ELO edge, betting market, squad payroll, and head-to-head. Press <strong>Project</strong> or <strong>Predict mode</strong> (top bar) to fill in winners. Sources are at the bottom.</p>
 
   <section>
     <div class="scroll-hint">← Scroll horizontally to see the full bracket →</div>
@@ -350,6 +369,7 @@
         <strong>Predictions (ELO):</strong> each unresolved match uses the embedded ELO table and the logistic transform <code>1/(1+10^(-ΔELO/(400×upset)))</code>, where <em>upset</em> is the Upset-factor slider. It otherwise ignores injuries, rest, travel, home advantage, and styles except as reflected in the rating. Source: Economics Observatory 2026 knockout preview.
       </div>
       <p class="source-note"><strong>Betting market &amp; cards &amp; news:</strong> the Recent-data layer pulls DraftKings moneylines (converted to a “to advance” probability), yellow/red cards, and match/league news headlines from ESPN's public summary endpoint. With the layer on, the shown probability is <code>(1−w)·ELO + w·market</code>.</p>
+      <p class="source-note"><strong>Squad payroll:</strong> each squad's estimated combined annual player salaries (wage bill) is shown on every card. Turn on the <strong>Payroll</strong> layer to fold it into the pick: the richer squad is favored in proportion to its share of the two teams' combined wage bill, blended as <code>(1−p)·pick + p·payrollShare</code> where <em>p</em> is the Payroll-weight slider. Figures are illustrative estimates compiled from public club-wage data, not official.</p>
       <p class="source-note"><strong>Live scoreboard:</strong> the page first reads <code>scoreboard.json</code> from the repo, then ESPN's public World Cup scoreboard feed, then the embedded snapshot. Official fixtures/results should be checked against FIFA's page.</p>
       <ul class="source-list source-note">
         <li><a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums" target="_blank" rel="noopener">FIFA — official schedule / results</a></li>
@@ -376,6 +396,19 @@
     "mexico": 1303, "united states": 1254, "australia": 1216, "egypt": 1200, "canada": 1239,
     "ivory coast": 1201, "dr congo": 1118, "sweden": 1188, "south africa": 1095, "cape verde": 1096,
     "ghana": 1036, "bosnia and herzegovina": 1062
+  };
+
+  // Estimated combined annual player salaries (first-team squad wage bill), in USD millions.
+  // Illustrative figures compiled from public club-wage estimates for each squad's players.
+  const PAYROLL_SOURCE_LABEL = "Estimated squad wage bills (combined annual player salaries), USD";
+  const teamPayroll = {
+    "england": 382, "france": 371, "spain": 338, "portugal": 301, "brazil": 289,
+    "germany": 281, "argentina": 252, "netherlands": 238, "belgium": 201, "colombia": 152,
+    "croatia": 141, "morocco": 129, "switzerland": 121, "mexico": 111, "united states": 106,
+    "senegal": 114, "austria": 99, "norway": 95, "ivory coast": 90, "sweden": 89,
+    "japan": 84, "ecuador": 79, "algeria": 84, "egypt": 71, "bosnia and herzegovina": 65,
+    "ghana": 60, "canada": 55, "dr congo": 54, "paraguay": 49, "australia": 45,
+    "south africa": 30, "cape verde": 22
   };
 
   const sourceModelProgress = {
@@ -628,6 +661,8 @@
   let projectOn = false;             // show ELO-projected winners (off by default)
   let recentDataOn = false;          // "incorporate recent data" layer toggle
   let marketWeight = 0.5;            // blend weight: 0 = pure ELO, 1 = pure market
+  let payrollOn = false;             // blend squad payroll into the predictions
+  let payrollWeight = 0.5;           // blend weight: 0 = ignore payroll, 1 = pure payroll share
   let recentLoading = false;
   const recentData = new Map();      // matchId -> { market, cards, news }
   const SUMMARY_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=";
@@ -711,7 +746,19 @@
 
   function pairKey(a, b) { return [norm(a), norm(b)].sort().join("|"); }
   function getRating(teamObj) { return eloRatings[norm(teamObj?.name)]; }
+  function getPayroll(teamObj) { return teamPayroll[norm(teamObj?.name)]; }
   function pct(x) { return `${Math.round(x * 100)}%`; }
+  // Format a squad wage bill given in USD millions, e.g. 382 -> "$382M", 1200 -> "$1.2B".
+  function formatMoney(m) {
+    if (!Number.isFinite(m)) return "—";
+    return m >= 1000 ? `$${(m / 1000).toFixed(1)}B` : `$${Math.round(m)}M`;
+  }
+  // Payroll-implied win share: the richer squad is the favorite in proportion to its wage bill.
+  function payrollProbability(teamA, teamB) {
+    const pa = getPayroll(teamA), pb = getPayroll(teamB);
+    if (!Number.isFinite(pa) || !Number.isFinite(pb) || pa + pb <= 0) return null;
+    return { pA: pa / (pa + pb), pB: pb / (pa + pb), payrollA: pa, payrollB: pb };
+  }
   // Projections (ELO auto-fill of likely winners) are shown only when explicitly requested:
   // the Project button, or while building a manual bracket in Predict mode. The Recent-data
   // layer does NOT force projections on (it blends into the probabilities that are already shown),
@@ -783,6 +830,13 @@
           blended = true;
         }
       }
+      // Blend squad payroll in, when that layer is on and we have wage bills for both teams.
+      const payroll = payrollProbability(teams[0], teams[1]);
+      let payrollBlended = false;
+      if (payrollOn && payrollWeight > 0 && payroll) {
+        pA = (1 - payrollWeight) * pA + payrollWeight * payroll.pA;
+        payrollBlended = true;
+      }
       let idx = pA >= 0.5 ? 0 : 1;
       // A manual pick overrides the model favorite (but never an official result).
       const picked = m.winnerIndex === undefined ? userPicks.get(m.id) : undefined;
@@ -805,7 +859,10 @@
         source: ELO_SOURCE_LABEL,
         external: sourceModelProgress[pairKey(teams[0].name, teams[1].name)],
         market,
-        blended
+        blended,
+        payroll,
+        payrollBlended,
+        payrollPWinner: payroll ? (idx === 0 ? payroll.pA : payroll.pB) : null
       };
     }
     // A pick implies its team won every feeder on its path — flag those as implied (must-be-true).
@@ -1008,6 +1065,8 @@
   function updateRecentHint() {
     const el = document.getElementById("recentHint");
     if (el) el.classList.toggle("hidden", !(recentDataOn && !showProjections()));
+    const pel = document.getElementById("payrollHint");
+    if (pel) pel.classList.toggle("hidden", !(payrollOn && !showProjections()));
   }
 
   let fitScheduled = false;
@@ -1107,6 +1166,9 @@
     const b = MATCH_BRIEFS[m.id];
     const predHtml = (project && m.prediction)
       ? `<span class="bc-elo">ELO: ${escapeHtml(m.prediction.winner.name)} ${escapeHtml(pct(m.prediction.pWinner))}</span>` : "";
+    const payA = getPayroll(teams[0]), payB = getPayroll(teams[1]);
+    const payHtml = (Number.isFinite(payA) && Number.isFinite(payB))
+      ? `<span class="bc-pay">💰 ${escapeHtml(formatMoney(payA))} vs ${escapeHtml(formatMoney(payB))}</span>` : "";
     const body = b ? `
         <p class="bc-line"><strong>Why it's exciting.</strong> ${escapeHtml(b.exciting)}</p>
         <p class="bc-line"><strong>Watch for.</strong> ${escapeHtml(b.watch)}</p>
@@ -1121,7 +1183,7 @@
         <span class="bc-title">${escapeHtml(teams[0].name)} <span class="bc-vs">vs</span> ${escapeHtml(teams[1].name)}</span>
         ${status ? `<span class="bc-status live">${escapeHtml(status)}</span>` : ""}
       </div>
-      <div class="bc-meta">${escapeHtml(formatDate(m.kickoff, {tz:true}))} · ${escapeHtml(m.stage)}${predHtml ? " · " : ""}${predHtml}</div>
+      <div class="bc-meta">${escapeHtml(formatDate(m.kickoff, {tz:true}))} · ${escapeHtml(m.stage)}${predHtml ? " · " : ""}${predHtml}${payHtml ? " · " : ""}${payHtml}</div>
       ${body}
       <div class="bc-more">Tap for full preview, ELO &amp; head-to-head →</div>
     </article>`;
@@ -1161,16 +1223,16 @@
       `${renderG(L.final)}` +
       `<div class="third"><h4>Third place</h4>${renderG(L.third)}</div>` +
       `</div></div>`;
+    // The tournament is now in the Round of 16, so the bracket centers on that round and the
+    // completed Round of 32 columns are hidden (their results still feed the R16 cards).
     document.getElementById("bracket").innerHTML =
-      quadColumn("Round of 32", L.leftR32) +
       quadColumn("Round of 16", L.leftR16) +
       quadColumn("Quarterfinal", L.leftQF) +
       soloColumn("Semifinal", L.leftSF[0]) +
       center +
       soloColumn("Semifinal", L.rightSF[0]) +
       quadColumn("Quarterfinal", L.rightQF) +
-      quadColumn("Round of 16", L.rightR16) +
-      quadColumn("Round of 32", L.rightR32);
+      quadColumn("Round of 16", L.rightR16);
   }
 
   function championRunProbability(championName) {
@@ -1210,6 +1272,16 @@
       <span class="small">Win-it-all % multiplies each round's ELO edge along the projected path (assumes the projected opponents). Updates with picks, results, and the upset slider.</span>`;
   }
 
+  // Compact per-team wage bill shown on each bracket card (only when both squads are known).
+  function payrollLine(teams) {
+    if (!teams || teams.length !== 2) return "";
+    const pa = getPayroll(teams[0]), pb = getPayroll(teams[1]);
+    if (!Number.isFinite(pa) || !Number.isFinite(pb)) return "";
+    const a = `${escapeHtml(teams[0].abbr || teams[0].name)} ${escapeHtml(formatMoney(pa))}`;
+    const b = `${escapeHtml(teams[1].abbr || teams[1].name)} ${escapeHtml(formatMoney(pb))}`;
+    return `<div class="payroll" title="Estimated combined annual player salaries">💰 ${a} · ${b}</div>`;
+  }
+
   function renderGame(m) {
     if (!m) return "";
     const project = showProjections();
@@ -1234,10 +1306,12 @@
     const proj = (project && m.winnerIndex === undefined && m.prediction)
       ? `<div class="${projClass}">▸ ${escapeHtml(m.prediction.winner.name)} ${escapeHtml(pct(m.prediction.pWinner))}</div>`
       : "";
+    const payLine = payrollLine(teams);
     return `<article class="game ${cardClass}" data-match-id="${escapeAttr(m.id)}">
       <span class="chev">ⓘ</span>
       <div class="when">${escapeHtml(formatDate(m.kickoff, {compact:true}))}</div>
       ${teamsHtml}
+      ${payLine}
       ${proj}
     </article>`;
   }
@@ -1303,6 +1377,7 @@
       ${rows}
       ${renderBrief(m)}
       ${eloHtml}
+      ${renderPayroll(m, teams)}
       ${renderRecent(m)}
       ${h2hHtml}
       ${link}`;
@@ -1321,12 +1396,35 @@
     const teams = p.teams;
     const width = Math.max(3, Math.min(97, Math.round(p.pWinner * 100)));
     const ratingsText = `${teams[0].name} ${p.ra} · ${teams[1].name} ${p.rb}`;
-    const label = m.state === "post" ? "Pre-match pick" : m.userPicked ? "Your pick" : m.implied ? "Implied (forced by a later pick)" : p.blended ? "Blended pick" : "ELO pick";
+    const label = m.state === "post" ? "Pre-match pick" : m.userPicked ? "Your pick" : m.implied ? "Implied (forced by a later pick)" : (p.blended || p.payrollBlended) ? "Blended pick" : "ELO pick";
     const blendNote = p.blended ? ` <span class="blend-tag">(ELO ${escapeHtml(pct(p.eloPWinner))} blended w/ market ${escapeHtml(pct(marketWeight))})</span>` : "";
+    const payNote = p.payrollBlended ? ` <span class="blend-tag">(+ payroll ${escapeHtml(pct(payrollWeight))} → ${escapeHtml(pct(p.payrollPWinner))})</span>` : "";
     return `<div class="elo">
-      <strong>${escapeHtml(label)}:</strong> ${escapeHtml(p.winner.name)} ${escapeHtml(pct(p.pWinner))} <span class="small">ΔELO ${p.diff >= 0 ? "+" : ""}${escapeHtml(Math.round(p.diff))}</span>${blendNote}<br>
+      <strong>${escapeHtml(label)}:</strong> ${escapeHtml(p.winner.name)} ${escapeHtml(pct(p.pWinner))} <span class="small">ΔELO ${p.diff >= 0 ? "+" : ""}${escapeHtml(Math.round(p.diff))}</span>${blendNote}${payNote}<br>
       <span class="small">${escapeHtml(ratingsText)}${p.external ? ` · ${escapeHtml(p.external)}` : ""}</span>
       <div class="probbar" title="${escapeAttr(p.winner.name)} ${pct(p.pWinner)}"><span style="width:${width}%"></span></div>
+    </div>`;
+  }
+
+  // Squad-payroll panel in the match popup: each team's wage bill, the payroll-implied edge,
+  // and whether that edge is currently folded into the prediction (Payroll layer on).
+  function renderPayroll(m, teams) {
+    if (!teams || teams.length !== 2 || teams.some(t => t?.placeholder)) return "";
+    const pp = payrollProbability(teams[0], teams[1]);
+    if (!pp) return `<div class="pay"><strong>Squad payroll:</strong> <span class="small">wage bill not available for one of these squads.</span></div>`;
+    const favIdx = pp.pA >= pp.pB ? 0 : 1;
+    const favP = favIdx === 0 ? pp.pA : pp.pB;
+    const width = Math.max(3, Math.min(97, Math.round(pp.pA * 100)));
+    const active = payrollOn && payrollWeight > 0;
+    const note = active
+      ? `<span class="blend-tag">folded into the pick at ${escapeHtml(pct(payrollWeight))} weight</span>`
+      : `<span class="small">turn on <strong>Payroll</strong> (top bar) to use this in the pick</span>`;
+    return `<div class="pay">
+      <strong>Squad payroll</strong> <span class="small">(est. combined annual player salaries)</span><br>
+      <div class="pay-row"><span>${escapeHtml(teams[0].name)}</span><span>${escapeHtml(formatMoney(pp.payrollA))}</span></div>
+      <div class="pay-row"><span>${escapeHtml(teams[1].name)}</span><span>${escapeHtml(formatMoney(pp.payrollB))}</span></div>
+      <div class="paybar" title="${escapeAttr(teams[0].name)} ${pct(pp.pA)} of combined wage bill"><span style="width:${width}%"></span></div>
+      <div class="small" style="margin-top:6px;">Payroll favors <strong>${escapeHtml(teams[favIdx].name)}</strong> ${escapeHtml(pct(favP))} by wage-bill share · ${note}</div>
     </div>`;
   }
 
@@ -1405,10 +1503,25 @@
     else recompute();
   }
 
+  function setPayrollMode(on) {
+    payrollOn = on;
+    const btn = document.getElementById("payrollBtn");
+    btn.textContent = `Payroll: ${on ? "on" : "off"}`;
+    btn.classList.toggle("toggle-on", on);
+    document.getElementById("payrollControls").classList.toggle("hidden", !on);
+    recompute();
+  }
+
   document.getElementById("refreshBtn").addEventListener("click", loadData);
   document.getElementById("projectBtn").addEventListener("click", () => setProject(!projectOn));
   document.getElementById("predictBtn").addEventListener("click", () => setPredictMode(!predictMode));
   document.getElementById("recentBtn").addEventListener("click", () => setRecentMode(!recentDataOn));
+  document.getElementById("payrollBtn").addEventListener("click", () => setPayrollMode(!payrollOn));
+  document.getElementById("payrollSlider").addEventListener("input", (e) => {
+    payrollWeight = Number(e.target.value);
+    document.getElementById("payrollVal").textContent = pct(payrollWeight);
+    recompute();
+  });
   document.getElementById("marketSlider").addEventListener("input", (e) => {
     marketWeight = Number(e.target.value);
     document.getElementById("marketVal").textContent = pct(marketWeight);
