@@ -1,0 +1,54 @@
+name: Refresh scoreboard cache
+
+# Keeps scoreboard.json fresh as a same-origin fallback for when a visitor's browser
+# can't reach ESPN directly. The page still prefers live ESPN; this cache is the backup.
+on:
+  schedule:
+    - cron: "5 */2 * * *"   # every 2 hours
+  workflow_dispatch:          # allow manual runs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-scoreboard
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch ESPN scoreboard
+        run: |
+          set -euo pipefail
+          URL="https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260628-20260719&limit=250"
+          # Write to a temp file first; only replace the cache if the response is valid,
+          # non-empty JSON with at least one event (never clobber a good cache with junk).
+          curl -fsS --max-time 30 "$URL" -o scoreboard.new.json
+          COUNT="$(node -e 'const d=require("./scoreboard.new.json");if(!Array.isArray(d.events))process.exit(1);console.log(d.events.length)')"
+          echo "Fetched $COUNT events"
+          if [ "$COUNT" -gt 0 ]; then
+            node -e '
+              const d=require("./scoreboard.new.json");
+              d.note="Auto-refreshed from ESPN by the refresh-scoreboard workflow.";
+              require("fs").writeFileSync("scoreboard.json", JSON.stringify(d));
+            '
+          else
+            echo "No events returned — keeping the existing cache."
+          fi
+          rm -f scoreboard.new.json
+
+      - name: Commit if changed
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- scoreboard.json; then
+            echo "No change to scoreboard.json"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scoreboard.json
+          git commit -m "chore: refresh scoreboard cache from ESPN"
+          git push

@@ -10,6 +10,8 @@ A single-file, static GitHub Pages site for the World Cup 2026 knockout bracket:
 - ELO-based predictions for unresolved games, recomputed after each result
 - **Predict mode** — click teams to advance your own picks and a slider to tune how many upsets the model expects
 - **Recent-data layer** — pulls live betting odds, cards, and news from ESPN and blends the market into each prediction
+- **Squad payroll** — each team's estimated combined annual player salaries shown on every card, with an optional layer that folds the wage bill into the prediction
+- centered on the **Round of 16** (the completed Round of 32 columns are hidden; their results still feed the R16 cards)
 - recent head-to-head notes where embedded lookups exist
 - browser auto-refresh every 2 hours
 
@@ -18,16 +20,19 @@ No build step and no server — everything runs in the browser from a single HTM
 ## Files
 
 - `index.html` — the entire app (markup, styles, and logic). This is the GitHub Pages entry point, and also opens directly from disk (`file://`).
-- `scoreboard.json` — optional scoreboard cache read first on load. The committed file is an empty placeholder; the page falls back to ESPN live if it has no events.
+- `scoreboard.json` — a same-origin fallback cache of ESPN's scoreboard, refreshed automatically by the workflow below. Used only when the visitor's browser can't reach ESPN directly.
+- `.github/workflows/refresh-scoreboard.yml` — refreshes `scoreboard.json` from ESPN every 2 hours (and on manual dispatch).
 - `.nojekyll` — tells GitHub Pages to serve files as-is (no Jekyll processing).
 
 ## How live updates work
 
 On load (and every 2 hours after), the page tries data sources in order:
 
-1. `scoreboard.json` in the repo root — a cached snapshot, if you choose to populate it.
-2. ESPN's public World Cup scoreboard feed, fetched directly from the browser.
-3. The embedded knockout snapshot baked into the page (so the bracket always renders).
+1. ESPN's public World Cup scoreboard feed, fetched directly from the browser — the live, real-time source (keyless and CORS-open, so it works straight from GitHub Pages).
+2. `scoreboard.json` in the repo root — a same-origin cache refreshed every 2 hours by the GitHub Action, used as a fallback when ESPN is unreachable from the browser.
+3. The embedded knockout snapshot baked into the page — carries the real Round-of-32 results so the current bracket always renders, even fully offline.
+
+Live events are matched to the bracket by ESPN event id (baked into each match) and by team name + kickoff time as a fallback, so results flow in even if ESPN renumbers a fixture.
 
 Official results always override ELO predictions. All unplayed/future matches show as **SCHEDULED**. Cross-check official fixtures against [FIFA's schedule page](https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums).
 
@@ -50,6 +55,12 @@ Click **Recent data** in the header to pull, per match, from ESPN's public summa
 - **News** — recent ESPN headlines for the match (team news, injuries, previews) as links.
 
 Only matches ESPN currently lists with both teams known carry odds (i.e. the live round); future rounds fill in as teams are decided. Requests are fetched on demand when you enable the layer and throttled four at a time. If ESPN ever changes or blocks the endpoint, the rest of the page is unaffected.
+
+## Squad payroll
+
+Every card shows each squad's **estimated combined annual player salaries** (its wage bill) — a rough proxy for how expensively assembled the team is. Tap a match for a payroll panel that breaks out both teams and the wage-bill share.
+
+Click **Payroll** in the header to fold it into the pick. The richer squad is favored in proportion to its share of the two teams' combined wage bill, and the **Payroll weight** slider blends it in: `0%` ignores payroll (pure ELO/market pick), `100%` picks purely by wage bill. The blend is applied on top of the ELO (and, if on, market) probability. Figures are illustrative estimates compiled from public club-wage data, not official.
 
 ## Deploy to GitHub Pages (deploy from branch)
 
