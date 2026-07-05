@@ -225,23 +225,30 @@
     .sig-val { color: var(--good); border-color: rgba(142,226,142,.45); background: rgba(142,226,142,.08); }
     .sig-mkt { color: var(--accent2); border-color: rgba(158,233,255,.4); background: rgba(158,233,255,.08); }
     .model-badge { color: #bfe9c9; }
-    #titleOdds { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 8px 12px; }
-    .to-head, .to-row { display: grid; grid-template-columns: 22px minmax(0,1fr) 84px 44px 72px 60px; align-items: center; gap: 8px; }
-    .to-head span { line-height: 1.15; }
-    .to-head { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 4px 0 6px; border-bottom: 1px solid rgba(255,255,255,.08); }
-    .to-row { padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+    #titleOdds { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 4px 12px; overflow-x: auto; }
+    .to-table { min-width: 340px; }
+    .to-head, .to-row { display: grid; grid-template-columns: 26px minmax(84px,1fr) 46px 46px 50px 58px; align-items: center; gap: 6px; }
+    .to-head { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; padding: 8px 0 6px; border-bottom: 1px solid rgba(255,255,255,.08); position: sticky; top: 0; }
+    .to-row { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
     .to-row:last-child { border-bottom: 0; }
     .to-rank { color: var(--faint); font-variant-numeric: tabular-nums; text-align: center; font-size: 12px; }
     .to-team { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .to-host { font-size: 11px; }
-    .to-bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
-    .to-bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--pred), var(--accent2)); border-radius: 999px; }
-    .to-win { font-weight: 900; text-align: right; font-variant-numeric: tabular-nums; color: #eae4ff; }
-    .to-final { text-align: right; color: var(--muted); }
-    .to-val { text-align: right; color: var(--good); }
-    @media (max-width: 560px) {
-      .to-head, .to-row { grid-template-columns: 20px minmax(0,1fr) 44px 64px; }
-      .to-bar, .to-val { display: none; }
+    .to-num { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+    .to-row .to-final { color: #cdd9ee; font-weight: 700; }
+    /* Title cell doubles as a mini progress bar via its --w custom property. */
+    .to-win { position: relative; text-align: right; font-weight: 900; font-variant-numeric: tabular-nums; color: #f1ecff;
+      padding: 3px 8px 3px 6px; border-radius: 7px; z-index: 0; }
+    .to-head .to-win { background: none; padding: 0; color: var(--muted); }
+    .to-row .to-win::before { content: ""; position: absolute; inset: 0; width: var(--w, 0%); border-radius: 7px; z-index: -1;
+      background: linear-gradient(90deg, rgba(185,156,255,.35), rgba(158,233,255,.30)); }
+    @media (max-width: 480px) {
+      #titleOdds { padding: 4px 8px; }
+      .to-table { min-width: 0; }   /* compact grid fits, so no horizontal scroll — Title stays visible */
+      .to-head, .to-row { grid-template-columns: 20px minmax(52px,1fr) 38px 38px 42px 46px; gap: 3px; }
+      .to-num, .to-win { font-size: 11px; }
+      .to-team { font-size: 13px; }
+      .to-win { padding: 3px 5px; }
     }
     .probbar { margin-top: 6px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
     .probbar > span { display: block; height: 100%; width: 50%; background: linear-gradient(90deg, var(--pred), var(--accent2)); border-radius: 999px; }
@@ -405,7 +412,7 @@
   <section id="titleSection">
     <div class="section-inner">
       <h2>Who wins it all — model title odds</h2>
-      <p class="small" style="margin:-6px 0 12px;">Every remaining team ranked by the backtested model's probability of winning the tournament (simulating each remaining round). <strong>Title</strong> = win it all — sums to 100% (one champion). <strong>Reach final</strong> = make the final — sums to ~200% (two teams get there). Updates with results and the upset slider.</p>
+      <p class="small" style="margin:-6px 0 12px;">Every remaining team ranked by the backtested model's chance of winning the tournament (simulating each remaining round). <strong>QF / SF / Final</strong> = chance to reach that round; <strong>Title</strong> = win it all. Each round's column sums to the number of slots in it (Title→100%, Final→~200%, SF→~400%, QF→~800%). Updates with results and the upset slider.</p>
       <div id="titleOdds"></div>
     </div>
   </section>
@@ -1494,25 +1501,30 @@
   function renderTitleOdds() {
     const el = document.getElementById("titleOdds");
     if (!el) return;
-    const { champ, final } = computeOutright();
+    const { champ, reachFinal, reachSF, reachQF } = computeOutright();
     const rows = [...champ.values()].sort((a, b) => b.p - a.p);
     if (!rows.length) { el.innerHTML = `<div class="model-card"><span class="small">Title odds appear once the Round of 16 matchups are set.</span></div>`; return; }
     const max = rows[0].p;
-    const showPct = p => p < 0.005 ? "<1%" : pct(p);
+    const showPct = p => p <= 0 ? "—" : p < 0.005 ? "<1%" : pct(p);
+    const at = (mp, name) => mp.get(norm(name))?.p || 0;
     const body = rows.map((t, i) => {
-      const finalP = final.get(norm(t.name))?.p || 0;
-      const val = getPayroll({ name: t.name });
       const w = Math.max(2, Math.round((t.p / max) * 100));
-      return `<div class="to-row" data-team="${escapeAttr(t.name)}">
+      return `<div class="to-row">
         <span class="to-rank">${i + 1}</span>
         <span class="to-team">${escapeHtml(t.name)}${isHost({ name: t.name }) ? ` <span class="to-host" title="2026 co-host — home edge">🏠</span>` : ""}</span>
-        <span class="to-bar"><span style="width:${w}%"></span></span>
-        <span class="to-win" title="Chance to win the tournament">${escapeHtml(showPct(t.p))}</span>
-        <span class="to-final small" title="Chance to reach the final">${escapeHtml(showPct(finalP))}</span>
-        <span class="to-val small">${val ? escapeHtml(formatMoney(val)) : ""}</span>
+        <span class="to-num to-qf" title="Reach the quarterfinals">${escapeHtml(showPct(at(reachQF, t.name)))}</span>
+        <span class="to-num to-sf" title="Reach the semifinals">${escapeHtml(showPct(at(reachSF, t.name)))}</span>
+        <span class="to-num to-final" title="Reach the final">${escapeHtml(showPct(at(reachFinal, t.name)))}</span>
+        <span class="to-win" title="Win the tournament" style="--w:${w}%">${escapeHtml(showPct(t.p))}</span>
       </div>`;
     }).join("");
-    el.innerHTML = `<div class="to-head"><span class="to-rank">#</span><span class="to-team">Team</span><span class="to-bar"></span><span class="to-win" title="Win the tournament">Title</span><span class="to-final small" title="Reach the final">Reach final</span><span class="to-val small">Value</span></div>${body}`;
+    el.innerHTML = `<div class="to-table"><div class="to-head">
+        <span class="to-rank">#</span><span class="to-team">Team</span>
+        <span class="to-num" title="Reach the quarterfinals">QF</span>
+        <span class="to-num" title="Reach the semifinals">SF</span>
+        <span class="to-num" title="Reach the final">Final</span>
+        <span class="to-win" title="Win the tournament">Title</span>
+      </div>${body}</div>`;
   }
 
   function renderGame(m) {
@@ -1731,7 +1743,14 @@
       winP.set(m.id, res);
     }
     const merge = (...maps) => { const out = new Map(); for (const mp of maps) if (mp) for (const [k, v] of mp) { const e = out.get(k) || { name: v.name, p: 0 }; e.p += v.p; out.set(k, e); } return out; };
-    return { champ: winP.get(FINAL_ID) || new Map(), final: merge(winP.get(LEFT_SF), winP.get(RIGHT_SF)) };
+    // Winning a round's match = advancing to the next round, so reach-QF = merge of R16 winners, etc.
+    const byRound = (round) => merge(...matches.filter(m => m.round === round).map(m => winP.get(m.id)));
+    return {
+      champ: winP.get(FINAL_ID) || new Map(),
+      reachFinal: merge(winP.get(LEFT_SF), winP.get(RIGHT_SF)),
+      reachSF: byRound("qf"),
+      reachQF: byRound("r16"),
+    };
   }
 
   // Teams still alive: any non-placeholder team appearing in a match not yet completed,
