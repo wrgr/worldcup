@@ -8,6 +8,8 @@ A single-file, static GitHub Pages site for the World Cup 2026 knockout bracket:
 - live match state pulled from ESPN's public scoreboard feed (with a committed JSON cache as a first source)
 - scheduled labels for all future/unplayed matches
 - a **backtested win-probability classifier** (logistic on Elo + host advantage) as the base prediction, validated out-of-sample on 2014–26 internationals (78% accuracy, 83% at World Cups)
+- a **"Who wins it all" ranking** — every remaining team by the model's title odds (full-bracket propagation), shown on the page
+- a **⚖️ Blend** control — one slider to set how much the value & market signals pull the model pick
 - **Predict mode** — click teams to advance your own picks and a slider to tune how many upsets the model expects
 - **Recent-data layer** — pulls live betting odds, cards, and news from ESPN and blends the market into each prediction
 - **Squad value** — each team's total Transfermarkt market value shown on every card, with an optional layer that folds it into the prediction
