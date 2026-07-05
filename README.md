@@ -11,6 +11,8 @@ A single-file, static GitHub Pages site for the World Cup 2026 knockout bracket:
 - **Predict mode** — click teams to advance your own picks and a slider to tune how many upsets the model expects
 - **Recent-data layer** — pulls live betting odds, cards, and news from ESPN and blends the market into each prediction
 - **Squad value** — each team's total Transfermarkt market value shown on every card, with an optional layer that folds it into the prediction
+- **Coming up** — a header popup with the remaining teams ranked by squad value, plus the next matches with open betting odds, squad values, and recent news
+- match popups pull the ESPN preview/news, odds, and cards on demand (no toggle needed)
 - centered on the **Round of 16** (the completed Round of 32 columns are hidden; their results still feed the R16 cards)
 - recent head-to-head notes where embedded lookups exist
 - browser auto-refresh every 2 hours
@@ -61,6 +63,15 @@ Only matches ESPN currently lists with both teams known carry odds (i.e. the liv
 Every card shows each squad's **total market value** — from [Transfermarkt](https://www.transfermarkt.com)'s 2026 World Cup squad valuations (e.g. France €1.52bn, England €1.36bn, Spain €1.22bn, Portugal €1.01bn). Tap a match for a panel that breaks out both teams and the value share.
 
 Click **Squad value** in the header to fold it into the pick. The more valuable squad is favored in proportion to its share of the two teams' combined value, and the **Value weight** slider blends it in: `0%` ignores value (pure ELO/market pick), `100%` picks purely by squad value. The blend is applied on top of the ELO (and, if on, market) probability. Market values fluctuate, so treat them as a snapshot rather than a live figure.
+
+## Coming up
+
+The **📋 Coming up** button (top bar) opens a popup summarising the state of the tournament:
+
+- **Remaining teams** — every side still alive, ranked by squad value.
+- **Next matches** — the upcoming fixtures, each with open betting odds (ESPN moneylines converted to a "to advance" share), the two squads' values, and recent ESPN news. Tap any match to open its full detail.
+
+Match popups also pull ESPN's preview/news, betting odds, and cards on demand when you open them, so a preview appears even for matchups without an embedded AI writeup.
 
 ## Deploy to GitHub Pages (deploy from branch)
 
