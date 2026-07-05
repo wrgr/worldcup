@@ -412,7 +412,7 @@
   <section id="upNextSection">
     <div class="section-inner">
       <h2>Up next — match previews</h2>
-      <p class="small" style="margin:-6px 0 12px;">AI-written previews for the next matches. Tap a card for the full preview, model edge, and head-to-head.</p>
+      <p class="small" style="margin:-6px 0 12px;">Previews for the next matches (model-generated where there's no editorial writeup). Tap a card for the full preview, model edge, and head-to-head.</p>
       <div id="upNext" class="brief-grid"></div>
     </div>
   </section>
@@ -1355,12 +1355,15 @@
     const score = m.scores.every(s => s !== null) ? `${m.scores[0]}–${m.scores[1]}` : "";
     const status = live ? ([score, liveClockLabel(m)].filter(Boolean).join(" · ") || "LIVE") : "";
     const b = MATCH_BRIEFS[m.id];
+    const settled = teams.every(t => t && !t.placeholder);
+    const briefTeams = b ? b.players.map(p => norm(p.team)) : [];
+    const briefMatches = b && settled && teams.every(t => briefTeams.includes(norm(t.name)));
     const predHtml = (project && m.prediction)
       ? `<span class="bc-elo">Model: ${escapeHtml(m.prediction.winner.name)} ${escapeHtml(pct(m.prediction.pWinner))}</span>` : "";
     const payA = getPayroll(teams[0]), payB = getPayroll(teams[1]);
     const payHtml = (Number.isFinite(payA) && Number.isFinite(payB))
       ? `<span class="bc-pay">💰 ${escapeHtml(formatMoney(payA))} vs ${escapeHtml(formatMoney(payB))}</span>` : "";
-    const body = b ? `
+    const body = briefMatches ? `
         <p class="bc-line"><strong>Why it's exciting.</strong> ${escapeHtml(b.exciting)}</p>
         <p class="bc-line"><strong>Watch for.</strong> ${escapeHtml(b.watch)}</p>
         <ul class="bc-players">${b.players.map(p => `
@@ -1368,7 +1371,9 @@
               <span class="bp-role">${escapeHtml(p.role)}</span>
               <span class="bp-bio">${escapeHtml(p.bio)}</span>
               <span class="bp-fun">⚡ ${escapeHtml(p.fun)}</span></li>`).join("")}</ul>`
-      : `<p class="bc-line small">An AI preview will appear once both teams are confirmed.</p>`;
+      : settled
+        ? `<p class="bc-line">${synthesizePreview(m, teams).slice(0, 3).join(" ") || "Preview builds once ratings load."}</p>`
+        : `<p class="bc-line small">A preview will appear once both teams are confirmed.</p>`;
     return `<article class="brief-card" data-match-id="${escapeAttr(m.id)}" role="button" tabindex="0">
       <div class="bc-head">
         <span class="bc-title">${escapeHtml(teams[0].name)} <span class="bc-vs">vs</span> ${escapeHtml(teams[1].name)}</span>
@@ -1376,7 +1381,7 @@
       </div>
       <div class="bc-meta">${escapeHtml(formatDate(m.kickoff, {tz:true}))} · ${escapeHtml(m.stage)}${predHtml ? " · " : ""}${predHtml}${payHtml ? " · " : ""}${payHtml}</div>
       ${body}
-      <div class="bc-more">Tap for full preview, ELO &amp; head-to-head →</div>
+      <div class="bc-more">Tap for full preview, model edge &amp; head-to-head →</div>
     </article>`;
   }
 
@@ -1545,6 +1550,50 @@
   }
 
   // AI preview card: why it's exciting, things to watch, two key players per team.
+  // Data-driven preview for any settled matchup (used where there's no hand-written brief — i.e.
+  // the current R16, quarterfinals, and beyond). Returns an array of HTML-safe sentences built
+  // from the model, Elo, host status, squad value, betting market and head-to-head.
+  function synthesizePreview(m, teams) {
+    const [A, B] = teams;
+    if (!A || !B || A.placeholder || B.placeholder) return [];
+    const s = [];
+    const mp = modelProbability(A, B);
+    if (mp) {
+      const fav = mp.pA >= mp.pB ? A : B, dog = mp.pA >= mp.pB ? B : A;
+      const favP = Math.max(mp.pA, mp.pB);
+      const stage = (m.stage || "tie").toLowerCase();
+      if (Math.abs(mp.pA - 0.5) < 0.08) {
+        s.push(`This ${escapeHtml(stage)} is one of the round's tightest — the model rates ${escapeHtml(A.name)} vs ${escapeHtml(B.name)} close to a coin flip, with ${escapeHtml(fav.name)} a slight ${pct(favP)} pick to advance.`);
+      } else {
+        s.push(`The model makes ${escapeHtml(fav.name)} a ${pct(favP)} favourite to advance past ${escapeHtml(dog.name)} in this ${escapeHtml(stage)}.`);
+      }
+      const dd = Math.abs(Math.round(mp.diff));
+      const hi = Math.max(mp.ra, mp.rb), lo = Math.min(mp.ra, mp.rb);
+      let edge = dd < 40
+        ? `Their Elo ratings are near-level (${A.name} ${mp.ra} · ${B.name} ${mp.rb})`
+        : `${escapeHtml(fav.name)} hold the Elo edge (${hi} to ${lo}, Δ${dd})`;
+      if (mp.host) edge += `, and ${escapeHtml(mp.host > 0 ? A.name : B.name)} carry home advantage as a 2026 co-host`;
+      s.push(edge + ".");
+    }
+    const vA = getPayroll(A), vB = getPayroll(B);
+    if (Number.isFinite(vA) && Number.isFinite(vB)) {
+      const rich = vA >= vB ? A : B, poor = vA >= vB ? B : A, rv = Math.max(vA, vB), pv = Math.min(vA, vB);
+      if (rv / Math.max(1, pv) >= 1.8) s.push(`On paper it's a mismatch of resources: ${escapeHtml(rich.name)}'s squad is valued at ${formatMoney(rv)} against ${escapeHtml(poor.name)}'s ${formatMoney(pv)}.`);
+      else s.push(`The squads are valued comparably (${escapeHtml(A.name)} ${formatMoney(vA)} · ${escapeHtml(B.name)} ${formatMoney(vB)}).`);
+    }
+    const mkt = recentData.get(m.id)?.market;
+    if (mkt) {
+      const top = teams.map(t => ({ n: t.name, p: mkt.byName[norm(t.name)] })).filter(x => Number.isFinite(x.p)).sort((a, b) => b.p - a.p)[0];
+      if (top) {
+        const agree = mp && norm(top.n) === norm((mp.pA >= mp.pB ? A : B).name);
+        s.push(`The betting market ${agree ? "agrees" : "sees it differently"}, pricing ${escapeHtml(top.n)} at ${pct(top.p)} to go through${mkt.overUnder != null ? ` (O/U ${escapeHtml(String(mkt.overUnder))} goals)` : ""}.`);
+      }
+    }
+    const h2h = getH2H(A, B);
+    if (h2h && h2h.text) s.push(escapeHtml(h2h.text));
+    return s;
+  }
+
   function renderBrief(m) {
     // Use the teams actually in this slot now (feeders may have resolved live), not the static slot type.
     const teams = m.slots.map(resolveOfficialSlot);
@@ -1555,19 +1604,19 @@
     const briefTeams = b ? b.players.map(p => norm(p.team)) : [];
     const briefMatches = b && settled && teams.every(t => briefTeams.includes(norm(t.name)));
     if (!briefMatches) {
-      // No embedded AI brief for this matchup — fall back to ESPN's match news/preview.
-      const news = espnNewsItems(m);
-      if (news) {
-        return `<div class="brief">
-          <div class="brief-tag">Preview via ESPN</div>
-          <h4>Latest news &amp; preview</h4>
-          <div class="news">${news}</div>
-        </div>`;
+      // No hand-written brief for this matchup (R16, quarterfinals, …) — build one from the data,
+      // and append ESPN team news when available.
+      if (!settled) {
+        return `<div class="brief brief-empty"><span class="small">A match preview will appear here once both teams are confirmed.</span></div>`;
       }
-      const msg = !settled
-        ? "An AI match preview will appear here once both teams are confirmed."
-        : "Pulling the latest preview & news from ESPN… if none appears, none is posted yet. See ELO, odds & head-to-head below.";
-      return `<div class="brief brief-empty"><span class="small">${escapeHtml(msg)}</span></div>`;
+      const sentences = synthesizePreview(m, teams);
+      const news = espnNewsItems(m);
+      return `<div class="brief">
+        <div class="brief-tag">Model preview</div>
+        <h4>${escapeHtml(teams[0].name)} vs ${escapeHtml(teams[1].name)}</h4>
+        ${sentences.length ? `<p>${sentences.join(" ")}</p>` : `<p class="small">Preview builds once ratings and odds load.</p>`}
+        ${news ? `<h4>Latest team news</h4><div class="news">${news}</div>` : ""}
+      </div>`;
     }
     const players = b.players.map(p => `
       <div class="brief-player">
