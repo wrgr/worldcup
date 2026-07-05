@@ -225,6 +225,23 @@
     .sig-val { color: var(--good); border-color: rgba(142,226,142,.45); background: rgba(142,226,142,.08); }
     .sig-mkt { color: var(--accent2); border-color: rgba(158,233,255,.4); background: rgba(158,233,255,.08); }
     .model-badge { color: #bfe9c9; }
+    #titleOdds { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 8px 12px; }
+    .to-head, .to-row { display: grid; grid-template-columns: 22px minmax(0,1fr) 90px 46px 66px 62px; align-items: center; gap: 8px; }
+    .to-head { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 4px 0 6px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .to-row { padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+    .to-row:last-child { border-bottom: 0; }
+    .to-rank { color: var(--faint); font-variant-numeric: tabular-nums; text-align: center; font-size: 12px; }
+    .to-team { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .to-host { font-size: 11px; }
+    .to-bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+    .to-bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--pred), var(--accent2)); border-radius: 999px; }
+    .to-win { font-weight: 900; text-align: right; font-variant-numeric: tabular-nums; color: #eae4ff; }
+    .to-final { text-align: right; color: var(--muted); }
+    .to-val { text-align: right; color: var(--good); }
+    @media (max-width: 560px) {
+      .to-head, .to-row { grid-template-columns: 20px minmax(0,1fr) 44px 58px; }
+      .to-bar, .to-head .to-bar { display: none; }
+    }
     .probbar { margin-top: 6px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
     .probbar > span { display: block; height: 100%; width: 50%; background: linear-gradient(90deg, var(--pred), var(--accent2)); border-radius: 999px; }
     .h2h { margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.4; border-top: 1px solid var(--line); padding-top: 8px; }
@@ -316,7 +333,17 @@
     <button id="predictBtn" type="button" class="secondary">Predict mode: off</button>
     <button id="recentBtn" type="button" class="secondary">Recent data: off</button>
     <button id="payrollBtn" type="button" class="secondary">Squad value: off</button>
+    <button id="blendBtn" type="button" class="secondary">⚖️ Blend</button>
     <button id="overviewBtn" type="button" class="secondary accent-btn">📋 Coming up</button>
+  </div>
+  <div id="blendControls" class="controls-row hidden">
+    <span class="pill">⚖️ How much the value &amp; market signals pull the model pick</span>
+    <span class="slider-wrap">
+      <label for="blendSlider">Signal influence</label>
+      <input id="blendSlider" type="range" min="0" max="1" step="0.05" value="0.5" />
+      <span id="blendVal">50%</span>
+    </span>
+    <span id="blendMix" class="small"></span>
   </div>
   <div id="recentControls" class="controls-row hidden">
     <span class="pill"><span id="recentStatus">Fetches live odds, cards & news from ESPN</span></span>
@@ -326,7 +353,7 @@
       <input id="marketSlider" type="range" min="0" max="1" step="0.05" value="0.5" />
       <span id="marketVal">50%</span>
     </span>
-    <span class="small">0% = pure ELO · 100% = pure betting market. Cards and news shown per match where available.</span>
+    <span class="small">Market's weight within the signal blend (scaled by ⚖️ Signal influence). Cards and news shown per match where available.</span>
   </div>
   <div id="payrollControls" class="controls-row hidden">
     <span class="pill">💰 Squad value = total Transfermarkt market value</span>
@@ -336,7 +363,7 @@
       <input id="payrollSlider" type="range" min="0" max="1" step="0.05" value="0.5" />
       <span id="payrollVal">50%</span>
     </span>
-    <span class="small">0% = ignore value · 100% = pick purely by squad value. Value always shows on the cards regardless.</span>
+    <span class="small">Value's weight within the signal blend (scaled by ⚖️ Signal influence). Value always shows on the cards regardless.</span>
   </div>
   <div id="predictControls" class="controls-row hidden">
     <span class="pill"><span id="pickCount">0</span> manual picks</span>
@@ -374,6 +401,14 @@
     </div>
   </section>
 
+  <section id="titleSection">
+    <div class="section-inner">
+      <h2>Who wins it all — model title odds</h2>
+      <p class="small" style="margin:-6px 0 12px;">Every remaining team ranked by the backtested model's probability of winning the tournament (simulating each remaining round). Updates with results and the upset slider.</p>
+      <div id="titleOdds"></div>
+    </div>
+  </section>
+
   <section id="upNextSection">
     <div class="section-inner">
       <h2>Up next — match previews</h2>
@@ -397,7 +432,8 @@
       <div class="model-card">
         <strong>Prediction (backtested classifier):</strong> each unresolved match's “to advance” probability comes from a logistic model <code>P = sigmoid(0.64·(ΔElo/100) + 0.25·host)</code>, fit on <strong>9,403 decisive international matches from 2014 to 2026</strong> (World Cups, continental cups, qualifiers and friendlies; drawn knockouts resolved by their penalty result). Each team's Elo is built from full international match history; <em>host</em> gives the 2026 co-hosts (USA, Canada, Mexico) a home edge worth ≈39 Elo. On a held-out 2023–26 test set (2,912 matches) it scores <strong>78% accuracy, Brier 0.149</strong>; on World Cup matches alone <strong>83% accuracy, Brier 0.124</strong>. The Upset slider flattens the curve. Match Elo history: <a href="https://github.com/martj42/international_results" target="_blank" rel="noopener">martj42 international results dataset</a>.
       </div>
-      <p class="source-note"><strong>Blended signals:</strong> the classifier is the base pick; the <strong>Squad value</strong> and <strong>Recent data</strong> layers fold their own “to advance” estimates in on top via the weight sliders (<code>(1−w)·base + w·signal</code>). The match popup shows all three signals — model, value, market — side by side. Cards &amp; news (yellow/red cards, team-specific headlines) come from ESPN's public summary endpoint.</p>
+      <p class="source-note"><strong>Blended signals:</strong> the classifier is the base pick; the <strong>Squad value</strong> and <strong>Recent data</strong> layers fold their own “to advance” estimates in on top. The <strong>⚖️ Blend</strong> control's <em>Signal influence</em> slider sets how hard the signals pull (0% = pure model), and each signal's own weight slider sets its share. The match popup shows all three signals — model, value, market — side by side. Cards &amp; news (yellow/red cards, team-specific headlines) come from ESPN's public summary endpoint.</p>
+      <p class="source-note"><strong>Title odds:</strong> the “who wins it all” ranking and the Coming-up overview propagate each team up the remaining bracket with the model — a team's title probability is the chance it wins every remaining match against the distribution of possible opponents. It updates with results and the upset slider.</p>
       <p class="source-note"><strong>Squad value:</strong> each squad's total market value (from <a href="https://www.transfermarkt.com" target="_blank" rel="noopener">Transfermarkt</a>, 2026 World Cup) is shown on every card. Turn on the <strong>Squad value</strong> layer to fold it into the pick: the more valuable squad is favored in proportion to its share of the two teams' combined value, blended as <code>(1−p)·pick + p·valueShare</code> where <em>p</em> is the Value-weight slider. Market values fluctuate; treat them as a snapshot, not a live figure.</p>
       <p class="source-note"><strong>Live scoreboard:</strong> the page first reads <code>scoreboard.json</code> from the repo, then ESPN's public World Cup scoreboard feed, then the embedded snapshot. Official fixtures/results should be checked against FIFA's page.</p>
       <ul class="source-list source-note">
@@ -711,6 +747,7 @@
   let projectOn = false;             // show ELO-projected winners (off by default)
   let recentDataOn = false;          // "incorporate recent data" layer toggle
   let marketWeight = 0.5;            // blend weight: 0 = pure ELO, 1 = pure market
+  let signalBlend = 0.5;             // master: how much the value/market signals pull the model pick
   let payrollOn = false;             // blend squad payroll into the predictions
   let payrollWeight = 0.5;           // blend weight: 0 = ignore payroll, 1 = pure payroll share
   let recentLoading = false;
@@ -891,22 +928,24 @@
       // is missing from the model ratings (shouldn't happen for the 32 finalists).
       const prob = bothKnown ? (modelProbability(teams[0], teams[1]) || eloProbability(teams[0], teams[1])) : null;
       if (!prob) continue;
-      // Blend the betting market in, when the "recent data" layer is on and we have a line for this match.
+      // Blend value & market signals onto the model base. The master "Signal influence" slider
+      // (signalBlend) scales how much the signals pull; each signal's own weight sets its share.
       const market = recentData.get(m.id)?.market || null;
       let pA = prob.pA, blended = false;
-      if (recentDataOn && marketWeight > 0 && market) {
+      if (recentDataOn && signalBlend > 0 && marketWeight > 0 && market) {
         const mpA = market.byName[norm(teams[0].name)];
         const mpB = market.byName[norm(teams[1].name)];
         if (Number.isFinite(mpA) && Number.isFinite(mpB)) {
-          pA = (1 - marketWeight) * prob.pA + marketWeight * mpA;
+          const w = marketWeight * signalBlend;
+          pA = (1 - w) * pA + w * mpA;
           blended = true;
         }
       }
-      // Blend squad payroll in, when that layer is on and we have wage bills for both teams.
       const payroll = payrollProbability(teams[0], teams[1]);
       let payrollBlended = false;
-      if (payrollOn && payrollWeight > 0 && payroll) {
-        pA = (1 - payrollWeight) * pA + payrollWeight * payroll.pA;
+      if (payrollOn && signalBlend > 0 && payrollWeight > 0 && payroll) {
+        const w = payrollWeight * signalBlend;
+        pA = (1 - w) * pA + w * payroll.pA;
         payrollBlended = true;
       }
       let idx = pA >= 0.5 ? 0 : 1;
@@ -1127,10 +1166,13 @@
   }
 
   async function loadRecentData() {
-    // Only matches ESPN currently lists with both teams known carry odds/cards (the live round).
+    // Only upcoming/live matches with both teams known carry odds — completed games no longer
+    // list a line, so targeting them would waste fetches and report a misleading match count.
     const targets = matches.filter(m => {
-      if (!m.espnId) return false;
-      const teams = m.slots.map(resolveProjectedSlot);
+      if (!m.espnId || m.state === "post") return false;
+      // Officially-known teams only — projected future matchups map to ESPN placeholder events
+      // ("R16 5 Winner"…) that carry no line, so they'd never match.
+      const teams = m.slots.map(resolveOfficialSlot);
       return teams.length === 2 && !teams.some(t => t.placeholder);
     }).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff)).slice(0, 24);
     if (!targets.length) { setRecentStatus("No matches with live odds yet (teams still TBD)."); return; }
@@ -1202,7 +1244,7 @@
         ? `${lastUpdated.toLocaleString(undefined, selectedTZ ? { timeZone: selectedTZ } : {})}${lastUpdatedSource ? ` (${lastUpdatedSource})` : ""}`
         : "live fetch pending — showing snapshot";
     }
-    renderUpNext(); renderBracket(); renderPathSummary();
+    renderUpNext(); renderBracket(); renderPathSummary(); renderTitleOdds();
     if (overviewOpen) document.getElementById("modalBody").innerHTML = renderOverview();
     else if (modalOpenId && byId.get(modalOpenId)) document.getElementById("modalBody").innerHTML = renderDetail(byId.get(modalOpenId));
     updateRecentHint();
@@ -1439,6 +1481,31 @@
     return `<div class="payroll" title="Total Transfermarkt squad market value">💰 ${a} · ${b}</div>`;
   }
 
+  // On-page ranked title odds: all remaining teams by model championship probability.
+  function renderTitleOdds() {
+    const el = document.getElementById("titleOdds");
+    if (!el) return;
+    const { champ, final } = computeOutright();
+    const rows = [...champ.values()].sort((a, b) => b.p - a.p);
+    if (!rows.length) { el.innerHTML = `<div class="model-card"><span class="small">Title odds appear once the Round of 16 matchups are set.</span></div>`; return; }
+    const max = rows[0].p;
+    const showPct = p => p < 0.005 ? "<1%" : pct(p);
+    const body = rows.map((t, i) => {
+      const finalP = final.get(norm(t.name))?.p || 0;
+      const val = getPayroll({ name: t.name });
+      const w = Math.max(2, Math.round((t.p / max) * 100));
+      return `<div class="to-row" data-team="${escapeAttr(t.name)}">
+        <span class="to-rank">${i + 1}</span>
+        <span class="to-team">${escapeHtml(t.name)}${isHost({ name: t.name }) ? ` <span class="to-host" title="2026 co-host — home edge">🏠</span>` : ""}</span>
+        <span class="to-bar"><span style="width:${w}%"></span></span>
+        <span class="to-win" title="Win the tournament">${escapeHtml(showPct(t.p))}</span>
+        <span class="to-final small" title="Reach the final">${escapeHtml(showPct(finalP))} final</span>
+        <span class="to-val small">${val ? escapeHtml(formatMoney(val)) : ""}</span>
+      </div>`;
+    }).join("");
+    el.innerHTML = `<div class="to-head"><span class="to-rank">#</span><span class="to-team">Team</span><span class="to-bar"></span><span class="to-win">Title</span><span class="to-final small">Final</span><span class="to-val small">Value</span></div>${body}`;
+  }
+
   function renderGame(m) {
     if (!m) return "";
     const project = showProjections();
@@ -1556,6 +1623,36 @@
       ${link}`;
   }
 
+  // Outright title odds: propagate each team up the bracket with the model to get its probability
+  // of winning every remaining match. Returns { champ, final } maps (norm name -> {name, p}).
+  const FINAL_ID = "53452537", LEFT_SF = "53452533", RIGHT_SF = "53452535", THIRD_ID = "53452539";
+  function computeOutright() {
+    const winP = new Map();   // matchId -> Map(norm -> {name, p}) = who wins (advances out of) that match
+    const entrants = (slot) => {
+      if (slot.type === "team") return new Map([[norm(slot.name), { name: slot.name, p: 1 }]]);
+      if (slot.type === "winner") return winP.get(slot.matchId) || new Map();
+      return new Map();       // loser feeders (third place) don't matter for the title
+    };
+    for (const m of matches) {
+      if (m.id === THIRD_ID) continue;
+      if (m.winnerTeam) { winP.set(m.id, new Map([[norm(m.winnerTeam.name), { name: m.winnerTeam.name, p: 1 }]])); continue; }
+      const A = entrants(m.slots[0]), B = entrants(m.slots[1]);
+      if (!A.size || !B.size) { winP.set(m.id, new Map()); continue; }
+      const res = new Map();
+      for (const [na, ea] of A) for (const [nb, eb] of B) {
+        if (na === nb) continue;
+        const pr = modelProbability({ name: ea.name }, { name: eb.name });
+        if (!pr) continue;
+        const jp = ea.p * eb.p;
+        const ra = res.get(na) || { name: ea.name, p: 0 }; ra.p += jp * pr.pA; res.set(na, ra);
+        const rb = res.get(nb) || { name: eb.name, p: 0 }; rb.p += jp * pr.pB; res.set(nb, rb);
+      }
+      winP.set(m.id, res);
+    }
+    const merge = (...maps) => { const out = new Map(); for (const mp of maps) if (mp) for (const [k, v] of mp) { const e = out.get(k) || { name: v.name, p: 0 }; e.p += v.p; out.set(k, e); } return out; };
+    return { champ: winP.get(FINAL_ID) || new Map(), final: merge(winP.get(LEFT_SF), winP.get(RIGHT_SF)) };
+  }
+
   // Teams still alive: any non-placeholder team appearing in a match not yet completed,
   // deduped and sorted by squad value (descending). Eliminated teams appear only in post matches.
   function aliveTeams() {
@@ -1574,9 +1671,12 @@
   // "Coming up" overview: remaining teams by squad value, plus the next matches with
   // open betting odds, squad values, and any recent news — all from ESPN + Transfermarkt.
   function renderOverview() {
-    const alive = aliveTeams();
+    const { champ } = computeOutright();
+    const alive = aliveTeams()
+      .map(t => ({ ...t, champ: champ.get(norm(t.name))?.p || 0 }))
+      .sort((a, b) => b.champ - a.champ || (b.value || 0) - (a.value || 0));
     const teamChips = alive.length
-      ? alive.map(t => `<span class="ov-team">${escapeHtml(t.name)}<span class="ov-val">${escapeHtml(t.value ? formatMoney(t.value) : "—")}</span></span>`).join("")
+      ? alive.map(t => `<span class="ov-team">${escapeHtml(t.name)}<span class="ov-val" title="Model title odds">${escapeHtml(pct(t.champ))}</span></span>`).join("")
       : `<span class="small">Teams fill in as results come through.</span>`;
     const upcoming = nextUpcoming(6);
     const rows = upcoming.map(m => {
@@ -1614,7 +1714,7 @@
     }).join("");
     return `<h3 style="margin:0 0 8px;">📋 Coming up</h3>
       <div class="ov-section">
-        <h4>Remaining teams <span class="small">(${alive.length}, by squad value)</span></h4>
+        <h4>Remaining teams <span class="small">(${alive.length}, by model title odds)</span></h4>
         <div class="ov-teams">${teamChips}</div>
       </div>
       <div class="ov-section">
@@ -1771,6 +1871,7 @@
     btn.textContent = `Recent data: ${on ? "on" : "off"}`;
     btn.classList.toggle("toggle-on", on);
     document.getElementById("recentControls").classList.toggle("hidden", !on);
+    updateBlendMix();
     if (on && recentData.size === 0 && !recentLoading) loadRecentData();
     else recompute();
   }
@@ -1781,7 +1882,27 @@
     btn.textContent = `Squad value: ${on ? "on" : "off"}`;
     btn.classList.toggle("toggle-on", on);
     document.getElementById("payrollControls").classList.toggle("hidden", !on);
+    updateBlendMix();
     recompute();
+  }
+
+  function setBlendMode(on) {
+    const btn = document.getElementById("blendBtn");
+    btn.classList.toggle("toggle-on", on);
+    document.getElementById("blendControls").classList.toggle("hidden", !on);
+    updateBlendMix();
+  }
+
+  // Readout of what the Signal-influence slider is doing, given which signal layers are on.
+  function updateBlendMix() {
+    const el = document.getElementById("blendMix");
+    if (!el) return;
+    const on = [];
+    if (payrollOn) on.push("value");
+    if (recentDataOn) on.push("market");
+    el.innerHTML = on.length
+      ? `Model leads; ${escapeHtml(pct(signalBlend))} pull toward ${on.join(" + ")} (each by its own weight slider). 0% = pure model.`
+      : `Turn on <strong>Squad value</strong> or <strong>Recent data</strong> to give the slider signals to blend.`;
   }
 
   document.getElementById("refreshBtn").addEventListener("click", loadData);
@@ -1789,6 +1910,13 @@
   document.getElementById("predictBtn").addEventListener("click", () => setPredictMode(!predictMode));
   document.getElementById("recentBtn").addEventListener("click", () => setRecentMode(!recentDataOn));
   document.getElementById("payrollBtn").addEventListener("click", () => setPayrollMode(!payrollOn));
+  document.getElementById("blendBtn").addEventListener("click", () => setBlendMode(document.getElementById("blendControls").classList.contains("hidden")));
+  document.getElementById("blendSlider").addEventListener("input", (e) => {
+    signalBlend = Number(e.target.value);
+    document.getElementById("blendVal").textContent = pct(signalBlend);
+    updateBlendMix();
+    recompute();
+  });
   document.getElementById("payrollSlider").addEventListener("input", (e) => {
     payrollWeight = Number(e.target.value);
     document.getElementById("payrollVal").textContent = pct(payrollWeight);
