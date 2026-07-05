@@ -181,6 +181,21 @@
     button.toggle-on { background: var(--pred); color: #160a2e; }
     button#recentBtn.toggle-on { background: var(--accent2); color: #04222b; }
     button#payrollBtn.toggle-on { background: var(--good); color: #06210f; }
+    button.accent-btn { border-color: rgba(158,233,255,.5); color: #d7f6ff; }
+    button.accent-btn:hover { background: rgba(158,233,255,.12); }
+    .ov-section { margin-top: 14px; }
+    .ov-section > h4 { margin: 0 0 8px; }
+    .ov-teams { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ov-team { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 9px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); }
+    .ov-team .ov-val { color: var(--good); font-weight: 800; font-variant-numeric: tabular-nums; }
+    .ov-match { border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
+      background: rgba(255,255,255,.03); cursor: pointer; }
+    .ov-match:hover { border-color: rgba(158,233,255,.4); background: rgba(158,233,255,.05); }
+    .ov-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 5px; }
+    .ov-line { font-size: 12.5px; color: #d9e7ff; line-height: 1.5; margin-top: 2px; }
+    .ov-k { display: inline-block; min-width: 96px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; vertical-align: top; }
+    .ov-news { display: inline-block; }
     .payroll { margin-top: 4px; font-size: 9.5px; color: var(--good); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pay { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); font-size: 12px; color: #d9f7e5; line-height: 1.4; }
     .pay strong { color: var(--text); }
@@ -195,6 +210,8 @@
     .chip.yellow { border-color: rgba(255,209,102,.5); color: var(--warn); }
     .chip.red { border-color: rgba(255,107,107,.6); color: var(--hot); }
     .recent .news a { display: block; margin-top: 3px; }
+    .brief .news a { display: block; margin-top: 5px; line-height: 1.4; }
+    .ov-news a { display: block; margin-top: 3px; line-height: 1.35; }
     .blend-tag { color: var(--accent2); font-weight: 700; }
     .status { margin-top: 8px; color: var(--muted); font-size: 12px; display:flex; justify-content:space-between; gap:8px; align-items: center; }
     .live { color: var(--hot); font-weight: 900; }
@@ -293,6 +310,7 @@
     <button id="predictBtn" type="button" class="secondary">Predict mode: off</button>
     <button id="recentBtn" type="button" class="secondary">Recent data: off</button>
     <button id="payrollBtn" type="button" class="secondary">Squad value: off</button>
+    <button id="overviewBtn" type="button" class="secondary accent-btn">📋 Coming up</button>
   </div>
   <div id="recentControls" class="controls-row hidden">
     <span class="pill"><span id="recentStatus">Fetches live odds, cards & news from ESPN</span></span>
@@ -674,6 +692,8 @@
   const SUMMARY_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=";
   let selectedTZ = "";               // "" = browser default, else IANA tz name
   let modalOpenId = null;            // matchId whose detail popup is open
+  let overviewOpen = false;          // "Coming up" overview popup is open
+  let overviewLoading = false;       // fetching odds/news for the overview
   const implicitPicks = new Set();   // matchIds forced by a downstream explicit pick
   let subtreeTeams = new Map();      // matchId -> Set of normalized team names that can reach it
 
@@ -972,10 +992,15 @@
 
   function parseSummary(data) {
     const out = { market: null, cards: [], news: [] };
+    // Home/away team names from the summary header — ESPN's pickcenter often gives the odds'
+    // team as an unresolved $ref (no displayName), so read names from the header competitors.
+    const hdr = data.header?.competitions?.[0]?.competitors || [];
+    const hdrHome = hdr.find(c => c.homeAway === "home")?.team;
+    const hdrAway = hdr.find(c => c.homeAway === "away")?.team;
     const pc = (data.pickcenter && data.pickcenter[0]) || (data.odds && data.odds[0]) || null;
     if (pc && pc.homeTeamOdds && pc.awayTeamOdds) {
-      const hName = pc.homeTeamOdds.team?.displayName;
-      const aName = pc.awayTeamOdds.team?.displayName;
+      const hName = pc.homeTeamOdds.team?.displayName || hdrHome?.displayName || hdrHome?.name;
+      const aName = pc.awayTeamOdds.team?.displayName || hdrAway?.displayName || hdrAway?.name;
       const hp = americanToProb(pc.homeTeamOdds.moneyLine);
       const ap = americanToProb(pc.awayTeamOdds.moneyLine);
       if (hName && aName && Number.isFinite(hp) && Number.isFinite(ap) && hp + ap > 0) {
@@ -1011,6 +1036,25 @@
   function setRecentStatus(text) {
     const el = document.getElementById("recentStatus");
     if (el) el.textContent = text;
+  }
+
+  // Fetch one match's ESPN summary (odds, cards, news) on demand and cache it — used by the
+  // match popup and the "Coming up" overview so previews/odds/news show without the toggle.
+  const summaryInFlight = new Map();   // matchId -> Promise, so concurrent opens don't double-fetch
+  async function ensureSummary(m, { force = false } = {}) {
+    if (!m || !m.espnId) return null;
+    if (!force && recentData.has(m.id)) return recentData.get(m.id);
+    if (summaryInFlight.has(m.id)) return summaryInFlight.get(m.id);
+    const p = (async () => {
+      try {
+        const res = await fetch(`${SUMMARY_URL}${encodeURIComponent(m.espnId)}&_=${Date.now()}`, { cache: "no-store" });
+        if (res.ok) { const d = parseSummary(await res.json()); recentData.set(m.id, d); return d; }
+      } catch (e) { /* leave uncached so a later open can retry */ }
+      finally { summaryInFlight.delete(m.id); }
+      return null;
+    })();
+    summaryInFlight.set(m.id, p);
+    return p;
   }
 
   async function loadRecentData() {
@@ -1090,7 +1134,8 @@
         : "live fetch pending — showing snapshot";
     }
     renderUpNext(); renderBracket(); renderPathSummary();
-    if (modalOpenId && byId.get(modalOpenId)) document.getElementById("modalBody").innerHTML = renderDetail(byId.get(modalOpenId));
+    if (overviewOpen) document.getElementById("modalBody").innerHTML = renderOverview();
+    else if (modalOpenId && byId.get(modalOpenId)) document.getElementById("modalBody").innerHTML = renderDetail(byId.get(modalOpenId));
     updateRecentHint();
     fitBracket();
   }
@@ -1374,9 +1419,18 @@
     const briefTeams = b ? b.players.map(p => norm(p.team)) : [];
     const briefMatches = b && settled && teams.every(t => briefTeams.includes(norm(t.name)));
     if (!briefMatches) {
+      // No embedded AI brief for this matchup — fall back to ESPN's match news/preview.
+      const news = espnNewsItems(m);
+      if (news) {
+        return `<div class="brief">
+          <div class="brief-tag">Preview via ESPN</div>
+          <h4>Latest news &amp; preview</h4>
+          <div class="news">${news}</div>
+        </div>`;
+      }
       const msg = !settled
         ? "An AI match preview will appear here once both teams are confirmed."
-        : "No AI preview for this matchup yet — see the head-to-head and ELO below.";
+        : "Pulling the latest preview & news from ESPN… if none appears, none is posted yet. See ELO, odds & head-to-head below.";
       return `<div class="brief brief-empty"><span class="small">${escapeHtml(msg)}</span></div>`;
     }
     const players = b.players.map(p => `
@@ -1433,6 +1487,85 @@
       ${link}`;
   }
 
+  // Teams still alive: any non-placeholder team appearing in a match not yet completed,
+  // deduped and sorted by squad value (descending). Eliminated teams appear only in post matches.
+  function aliveTeams() {
+    const seen = new Map();
+    for (const m of matches) {
+      if (m.state === "post") continue;
+      for (const t of m.slots.map(resolveOfficialSlot)) {
+        if (!t || t.placeholder) continue;
+        const k = norm(t.name);
+        if (!seen.has(k)) seen.set(k, { name: t.name, value: getPayroll(t) });
+      }
+    }
+    return [...seen.values()].sort((a, b) => (b.value || 0) - (a.value || 0));
+  }
+
+  // "Coming up" overview: remaining teams by squad value, plus the next matches with
+  // open betting odds, squad values, and any recent news — all from ESPN + Transfermarkt.
+  function renderOverview() {
+    const alive = aliveTeams();
+    const teamChips = alive.length
+      ? alive.map(t => `<span class="ov-team">${escapeHtml(t.name)}<span class="ov-val">${escapeHtml(t.value ? formatMoney(t.value) : "—")}</span></span>`).join("")
+      : `<span class="small">Teams fill in as results come through.</span>`;
+    const upcoming = nextUpcoming(6);
+    const rows = upcoming.map(m => {
+      const teams = m.slots.map(resolveProjectedSlot);
+      const rd = recentData.get(m.id);
+      const live = m.state === "in";
+      let oddsHtml = `<span class="small">${overviewLoading ? "loading…" : "not posted yet"}</span>`;
+      if (rd && rd.market) {
+        const ranked = teams.map(t => ({ name: t.name, p: rd.market.byName[norm(t.name)] }))
+          .filter(x => Number.isFinite(x.p)).sort((a, b) => b.p - a.p);
+        if (ranked.length) {
+          oddsHtml = ranked.map(r => `${escapeHtml(r.name)} <strong>${escapeHtml(pct(r.p))}</strong>`).join(" · ")
+            + (rd.market.overUnder != null ? ` · O/U ${escapeHtml(rd.market.overUnder)}` : "")
+            + ` <span class="small">(${escapeHtml(rd.market.provider)})</span>`;
+        }
+      }
+      const va = getPayroll(teams[0]), vb = getPayroll(teams[1]);
+      const valHtml = (Number.isFinite(va) && Number.isFinite(vb))
+        ? `${escapeHtml(teams[0].abbr || teams[0].name)} ${escapeHtml(formatMoney(va))} · ${escapeHtml(teams[1].abbr || teams[1].name)} ${escapeHtml(formatMoney(vb))}` : "";
+      const news = espnNewsItems(m);
+      const when = live
+        ? `<span class="live-badge"><span class="live-pulse"></span>LIVE ${escapeHtml(liveClockLabel(m))}</span>`
+        : escapeHtml(formatDate(m.kickoff, { tz: true }));
+      return `<div class="ov-match" data-match-id="${escapeAttr(m.id)}" role="button" tabindex="0">
+        <div class="ov-head"><strong>${escapeHtml(teams[0].name)} <span class="bc-vs">vs</span> ${escapeHtml(teams[1].name)}</strong><span class="small">${when} · ${escapeHtml(m.stage)}</span></div>
+        <div class="ov-line"><span class="ov-k">Odds to advance</span> ${oddsHtml}</div>
+        ${valHtml ? `<div class="ov-line"><span class="ov-k">Squad value</span> ${valHtml}</div>` : ""}
+        ${news ? `<div class="ov-line"><span class="ov-k">News</span> <span class="ov-news">${news}</span></div>` : ""}
+      </div>`;
+    }).join("");
+    return `<h3 style="margin:0 0 8px;">📋 Coming up</h3>
+      <div class="ov-section">
+        <h4>Remaining teams <span class="small">(${alive.length}, by squad value)</span></h4>
+        <div class="ov-teams">${teamChips}</div>
+      </div>
+      <div class="ov-section">
+        <h4>Next matches — odds, value &amp; news ${overviewLoading ? `<span class="small">· loading…</span>` : ""}</h4>
+        ${rows || `<span class="small">No upcoming matches in the schedule.</span>`}
+      </div>
+      <p class="source-note" style="margin-top:10px;">Odds are ESPN moneylines converted to a “to advance” share; squad value from Transfermarkt; news from ESPN. Tap a match for full detail.</p>`;
+  }
+
+  async function openOverview() {
+    overviewOpen = true;
+    modalOpenId = null;
+    document.getElementById("modalBody").innerHTML = renderOverview();
+    document.getElementById("modal").classList.remove("hidden");
+    // Pull odds/news for the upcoming matches, then re-render with them.
+    const ups = nextUpcoming(6).filter(m => m.espnId && !recentData.has(m.id));
+    if (ups.length) {
+      overviewLoading = true;
+      document.getElementById("modalBody").innerHTML = renderOverview();
+      await Promise.all(ups.map(m => ensureSummary(m)));
+      overviewLoading = false;
+      if (overviewOpen) document.getElementById("modalBody").innerHTML = renderOverview();
+    }
+  }
+
   // Best-effort AiScore head-to-head URL, e.g. "France"+"Morocco" -> .../soccer-france-vs-morocco
   function aiscoreH2H(a, b) {
     const slug = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
@@ -1480,7 +1613,7 @@
 
   function renderRecent(m) {
     const rd = recentData.get(m.id);
-    if (!recentDataOn || !rd) return "";
+    if (!rd) return "";                 // shown whenever we have ESPN data (toggle or on-demand)
     const parts = [];
     if (rd.market) {
       const teams = m.slots.map(resolveProjectedSlot);
@@ -1497,13 +1630,17 @@
       }).join("");
       parts.push(`<div class="chips">${chips}</div>`);
     }
-    if (rd.news && rd.news.length) {
-      const items = rd.news.map(n => n.url
-        ? `<a href="${escapeAttr(n.url)}" target="_blank" rel="noopener">${escapeHtml(n.headline)}</a>`
-        : `<span>${escapeHtml(n.headline)}</span>`).join("");
-      parts.push(`<div class="news">${items}</div>`);
-    }
+    // News is surfaced in the preview slot (renderBrief), so it isn't duplicated here.
     return parts.length ? `<div class="recent">${parts.join("")}</div>` : "";
+  }
+
+  // ESPN news headlines for a match, if we've fetched its summary.
+  function espnNewsItems(m) {
+    const rd = recentData.get(m.id);
+    if (!rd || !rd.news || !rd.news.length) return "";
+    return rd.news.map(n => n.url
+      ? `<a href="${escapeAttr(n.url)}" target="_blank" rel="noopener">${escapeHtml(n.headline)}</a>`
+      : `<span>${escapeHtml(n.headline)}</span>`).join("");
   }
 
   function getH2H(a, b) {
@@ -1611,20 +1748,31 @@
     if (card) { e.preventDefault(); openModal(card.getAttribute("data-match-id")); }
   });
 
-  function openModal(id) {
+  async function openModal(id) {
     const m = byId.get(id);
     if (!m) return;
+    overviewOpen = false;
     modalOpenId = id;
     document.getElementById("modalBody").innerHTML = renderDetail(m);
     document.getElementById("modal").classList.remove("hidden");
+    // Pull this match's ESPN preview/odds/news on demand, then re-render the popup with it.
+    const rd = await ensureSummary(m);
+    if (rd && modalOpenId === id && !overviewOpen) {
+      document.getElementById("modalBody").innerHTML = renderDetail(m);
+    }
   }
   function closeModal() {
     modalOpenId = null;
+    overviewOpen = false;
     document.getElementById("modal").classList.add("hidden");
   }
+  document.getElementById("overviewBtn").addEventListener("click", openOverview);
   document.querySelector(".modal-close").addEventListener("click", closeModal);
   document.getElementById("modal").addEventListener("click", (e) => {
-    if (e.target.id === "modal") closeModal();   // click backdrop
+    if (e.target.id === "modal") { closeModal(); return; }   // click backdrop
+    if (e.target.closest("a")) return;                       // let links work
+    const om = e.target.closest(".ov-match[data-match-id]"); // drill into a match from the overview
+    if (om) openModal(om.getAttribute("data-match-id"));
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
