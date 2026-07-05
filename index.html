@@ -219,6 +219,12 @@
     .pred-label { color: var(--pred); font-weight: 900; }
     .elo { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); font-size: 12px; color: #d9e7ff; line-height: 1.35; }
     .elo strong { color: var(--text); }
+    .signals { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+    .sig { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.14); }
+    .sig-model { color: #cdbcff; border-color: rgba(185,156,255,.5); background: rgba(185,156,255,.1); }
+    .sig-val { color: var(--good); border-color: rgba(142,226,142,.45); background: rgba(142,226,142,.08); }
+    .sig-mkt { color: var(--accent2); border-color: rgba(158,233,255,.4); background: rgba(158,233,255,.08); }
+    .model-badge { color: #bfe9c9; }
     .probbar { margin-top: 6px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
     .probbar > span { display: block; height: 100%; width: 50%; background: linear-gradient(90deg, var(--pred), var(--accent2)); border-radius: 999px; }
     .h2h { margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.4; border-top: 1px solid var(--line); padding-top: 8px; }
@@ -287,7 +293,7 @@
     <span class="pill"><span class="dot" id="liveDot"></span><span id="liveLabel">Loading…</span></span>
     <span class="pill" title="Refreshes every minute while a match is live, otherwise every 2 hours">Auto-refresh: 1 min live · 2 h idle</span>
     <span class="pill" title="When live data was last successfully retrieved">Last updated: <span id="lastUpdated">—</span></span>
-    <span class="pill">ELO predictions recompute after each result</span>
+    <span class="pill">Backtested model recomputes after each result</span>
     <span class="pill">Times:
       <select id="tzPicker" title="Choose a timezone for all kickoff times">
         <option value="">Browser default</option>
@@ -344,7 +350,7 @@
   </div>
 </header>
 <main>
-  <p class="small" id="introNote" style="margin:0 0 10px;">Tap any match for an AI preview, ELO edge, betting market, squad value, and head-to-head. Press <strong>Project</strong> or <strong>Predict mode</strong> (top bar) to fill in winners. Sources are at the bottom.</p>
+  <p class="small" id="introNote" style="margin:0 0 10px;">Tap any match for an AI preview, the backtested model edge, betting market, squad value, and head-to-head. Press <strong>Project</strong> or <strong>Predict mode</strong> (top bar) to fill in winners. Sources are at the bottom.</p>
 
   <section>
     <div class="scroll-hint">← Scroll horizontally to see the full bracket →</div>
@@ -356,7 +362,7 @@
     </div>
     <div class="legend">
       <span>Green = official winner</span>
-      <span>Purple = ELO projected winner</span>
+      <span>Purple = model projected winner</span>
       <span>Teal = your pick · dashed purple = implied by a later pick</span>
     </div>
   </section>
@@ -371,7 +377,7 @@
   <section id="upNextSection">
     <div class="section-inner">
       <h2>Up next — match previews</h2>
-      <p class="small" style="margin:-6px 0 12px;">AI-written previews for the next matches. Tap a card for the full preview, ELO edge, and head-to-head.</p>
+      <p class="small" style="margin:-6px 0 12px;">AI-written previews for the next matches. Tap a card for the full preview, model edge, and head-to-head.</p>
       <div id="upNext" class="brief-grid"></div>
     </div>
   </section>
@@ -389,9 +395,9 @@
     <div class="section-inner">
       <h2>Sources &amp; methodology</h2>
       <div class="model-card">
-        <strong>Predictions (ELO):</strong> each unresolved match uses the embedded ELO table and the logistic transform <code>1/(1+10^(-ΔELO/(400×upset)))</code>, where <em>upset</em> is the Upset-factor slider. It otherwise ignores injuries, rest, travel, home advantage, and styles except as reflected in the rating. Source: Economics Observatory 2026 knockout preview.
+        <strong>Prediction (backtested classifier):</strong> each unresolved match's “to advance” probability comes from a logistic model <code>P = sigmoid(0.64·(ΔElo/100) + 0.25·host)</code>, fit on <strong>9,403 decisive international matches from 2014 to 2026</strong> (World Cups, continental cups, qualifiers and friendlies; drawn knockouts resolved by their penalty result). Each team's Elo is built from full international match history; <em>host</em> gives the 2026 co-hosts (USA, Canada, Mexico) a home edge worth ≈39 Elo. On a held-out 2023–26 test set (2,912 matches) it scores <strong>78% accuracy, Brier 0.149</strong>; on World Cup matches alone <strong>83% accuracy, Brier 0.124</strong>. The Upset slider flattens the curve. Match Elo history: <a href="https://github.com/martj42/international_results" target="_blank" rel="noopener">martj42 international results dataset</a>.
       </div>
-      <p class="source-note"><strong>Betting market &amp; cards &amp; news:</strong> the Recent-data layer pulls DraftKings moneylines (converted to a “to advance” probability), yellow/red cards, and match/league news headlines from ESPN's public summary endpoint. With the layer on, the shown probability is <code>(1−w)·ELO + w·market</code>.</p>
+      <p class="source-note"><strong>Blended signals:</strong> the classifier is the base pick; the <strong>Squad value</strong> and <strong>Recent data</strong> layers fold their own “to advance” estimates in on top via the weight sliders (<code>(1−w)·base + w·signal</code>). The match popup shows all three signals — model, value, market — side by side. Cards &amp; news (yellow/red cards, team-specific headlines) come from ESPN's public summary endpoint.</p>
       <p class="source-note"><strong>Squad value:</strong> each squad's total market value (from <a href="https://www.transfermarkt.com" target="_blank" rel="noopener">Transfermarkt</a>, 2026 World Cup) is shown on every card. Turn on the <strong>Squad value</strong> layer to fold it into the pick: the more valuable squad is favored in proportion to its share of the two teams' combined value, blended as <code>(1−p)·pick + p·valueShare</code> where <em>p</em> is the Value-weight slider. Market values fluctuate; treat them as a snapshot, not a live figure.</p>
       <p class="source-note"><strong>Live scoreboard:</strong> the page first reads <code>scoreboard.json</code> from the repo, then ESPN's public World Cup scoreboard feed, then the embedded snapshot. Official fixtures/results should be checked against FIFA's page.</p>
       <ul class="source-list source-note">
@@ -433,6 +439,26 @@
     "algeria": 257, "austria": 245, "ghana": 235, "canada": 199, "mexico": 192,
     "paraguay": 154, "bosnia and herzegovina": 146, "dr congo": 144, "egypt": 116, "australia": 77,
     "south africa": 49, "cape verde": 49
+  };
+
+  // --- Backtested win-probability classifier -------------------------------------------------
+  // A logistic model fit on 9,403 decisive international matches (2014–2026, incl. World Cups),
+  // using each team's current Elo (built from full match history) and host advantage.
+  //   P(win) = sigmoid( B·(ΔElo/100) + C·hostAdvantage )   [intercept ≈0, dropped for symmetry]
+  // Out-of-sample (2023–26 holdout, 2,912 matches): 78% accuracy, Brier 0.149; on World Cup
+  // matches specifically 83% accuracy, Brier 0.124. Ratings are our own Elo, not the table above.
+  const MODEL = { B: 0.6360, C: 0.2476,
+    metrics: { acc: 0.780, brier: 0.149, n: 2912, wcAcc: 0.829, wcN: 70 },
+    label: "Backtested classifier — logistic on Elo, 2014–26 internationals" };
+  const HOST_NATIONS = new Set(["united states", "canada", "mexico"]);   // 2026 co-hosts
+  const modelElo = {
+    "spain": 2224, "argentina": 2220, "france": 2207, "england": 2119, "brazil": 2112,
+    "colombia": 2088, "portugal": 2084, "morocco": 2064, "mexico": 2059, "netherlands": 2049,
+    "switzerland": 2013, "norway": 2012, "germany": 1992, "belgium": 1976, "japan": 1976,
+    "ecuador": 1956, "croatia": 1949, "united states": 1922, "australia": 1906, "paraguay": 1895,
+    "austria": 1886, "senegal": 1874, "egypt": 1860, "algeria": 1853, "canada": 1853,
+    "ivory coast": 1844, "dr congo": 1807, "sweden": 1804, "south africa": 1699, "cape verde": 1694,
+    "ghana": 1680, "bosnia and herzegovina": 1680
   };
 
   const sourceModelProgress = {
@@ -776,6 +802,8 @@
 
   function pairKey(a, b) { return [norm(a), norm(b)].sort().join("|"); }
   function getRating(teamObj) { return eloRatings[norm(teamObj?.name)]; }
+  function getModelElo(teamObj) { return modelElo[norm(teamObj?.name)]; }
+  function isHost(teamObj) { return HOST_NATIONS.has(norm(teamObj?.name)); }
   function getPayroll(teamObj) { return teamPayroll[norm(teamObj?.name)]; }
   function pct(x) { return `${Math.round(x * 100)}%`; }
   // Format a squad value given in EUR millions, e.g. 386 -> "€386M", 1520 -> "€1.52B".
@@ -839,6 +867,17 @@
     return { pA, pB: 1 - pA, diff: ra - rb, ra, rb };
   }
 
+  // Backtested classifier: P(A advances) from our Elo + host advantage, calibrated on
+  // 2014–26 internationals. The Upset slider flattens it (divides the logit).
+  function modelProbability(teamA, teamB) {
+    const ra = getModelElo(teamA), rb = getModelElo(teamB);
+    if (!Number.isFinite(ra) || !Number.isFinite(rb)) return null;
+    const host = (isHost(teamA) ? 1 : 0) - (isHost(teamB) ? 1 : 0);
+    const logit = (MODEL.B * (ra - rb) / 100 + MODEL.C * host) / eloScaleFactor;
+    const pA = 1 / (1 + Math.exp(-logit));
+    return { pA, pB: 1 - pA, diff: ra - rb, ra, rb, host };
+  }
+
   function computePredictions() {
     for (const m of matches) {
       // Recompute projection fields for matches without an official result so picks/slider changes re-cascade.
@@ -847,7 +886,10 @@
         m.prediction = undefined; m.userPicked = false;
       }
       const teams = m.slots.map(resolveProjectedSlot);
-      const prob = teams.length === 2 && !teams.some(t => t.placeholder) ? eloProbability(teams[0], teams[1]) : null;
+      const bothKnown = teams.length === 2 && !teams.some(t => t.placeholder);
+      // Backtested classifier is the base prediction; fall back to the raw Elo table if a team
+      // is missing from the model ratings (shouldn't happen for the 32 finalists).
+      const prob = bothKnown ? (modelProbability(teams[0], teams[1]) || eloProbability(teams[0], teams[1])) : null;
       if (!prob) continue;
       // Blend the betting market in, when the "recent data" layer is on and we have a line for this match.
       const market = recentData.get(m.id)?.market || null;
@@ -882,14 +924,18 @@
         winner: teams[idx],
         winnerIndex: idx,
         pWinner: idx === 0 ? pA : 1 - pA,
-        eloPWinner: idx === 0 ? prob.pA : prob.pB,
+        eloPWinner: idx === 0 ? prob.pA : prob.pB,        // base classifier prob for the pick
+        modelPWinner: idx === 0 ? prob.pA : prob.pB,
         diff: idx === 0 ? prob.diff : -prob.diff,
         ra: prob.ra,
         rb: prob.rb,
-        source: ELO_SOURCE_LABEL,
+        host: prob.host || 0,
+        source: MODEL.label,
         external: sourceModelProgress[pairKey(teams[0].name, teams[1].name)],
         market,
         blended,
+        // Market's own "to advance" for the picked side, for the signals breakdown.
+        marketPWinner: market ? market.byName[norm(teams[idx].name)] : null,
         payroll,
         payrollBlended,
         payrollPWinner: payroll ? (idx === 0 ? payroll.pA : payroll.pB) : null
@@ -1026,11 +1072,34 @@
         clock: ev.clock?.displayValue || ""
       });
     }
-    for (const a of ((data.news && data.news.articles) || []).slice(0, 3)) {
+    for (const a of ((data.news && data.news.articles) || [])) {
       const url = a.links?.web?.href || a.links?.mobile?.href || null;
-      if (a.headline) out.news.push({ headline: a.headline, url });
+      // Team tags on the article, so we can keep only news about the two teams in the match.
+      const tags = (a.categories || []).filter(c => c.type === "team")
+        .map(c => norm(c.description || c.team?.description || c.team?.displayName || "")).filter(Boolean);
+      if (a.headline) out.news.push({ headline: a.headline, url, description: a.description || "", teams: tags });
     }
     return out;
+  }
+
+  // News specific to the two teams in a match: keep articles tagged with either team, or whose
+  // headline/description names one of them. Falls back to nothing (rather than generic league news).
+  function newsForMatch(m, limit = 3) {
+    const rd = recentData.get(m.id);
+    if (!rd || !rd.news || !rd.news.length) return [];
+    const teams = m.slots.map(resolveProjectedSlot).filter(t => t && !t.placeholder);
+    const names = teams.map(t => norm(t.name));
+    if (!names.length) return [];
+    const mentions = (n) => {
+      const tags = n.teams || [];
+      // Focused article about one of these teams: tagged with our team and NOT a big multi-team
+      // roundup (e.g. the "every team's odds" piece tags all 40 sides — that isn't team-specific).
+      if (tags.length && tags.length <= 5 && tags.some(tg => names.includes(tg))) return true;
+      // Headline (not the catch-all description) explicitly names one of the teams.
+      const hl = norm(n.headline);
+      return teams.some(t => hl.includes(norm(t.name)));
+    };
+    return rd.news.filter(mentions).slice(0, limit);
   }
 
   function setRecentStatus(text) {
@@ -1245,7 +1314,7 @@
     const status = live ? ([score, liveClockLabel(m)].filter(Boolean).join(" · ") || "LIVE") : "";
     const b = MATCH_BRIEFS[m.id];
     const predHtml = (project && m.prediction)
-      ? `<span class="bc-elo">ELO: ${escapeHtml(m.prediction.winner.name)} ${escapeHtml(pct(m.prediction.pWinner))}</span>` : "";
+      ? `<span class="bc-elo">Model: ${escapeHtml(m.prediction.winner.name)} ${escapeHtml(pct(m.prediction.pWinner))}</span>` : "";
     const payA = getPayroll(teams[0]), payB = getPayroll(teams[1]);
     const payHtml = (Number.isFinite(payA) && Number.isFinite(payB))
       ? `<span class="bc-pay">💰 ${escapeHtml(formatMoney(payA))} vs ${escapeHtml(formatMoney(payB))}</span>` : "";
@@ -1330,7 +1399,7 @@
 
   function renderPathSummary() {
     if (!showProjections()) {
-      document.getElementById("pathSummary").innerHTML = `<span class="small">Press <strong>Project</strong> (top bar) to fill in ELO-projected winners and see the path to the title. Or use <strong>Predict mode</strong> to pick winners yourself.</span>`;
+      document.getElementById("pathSummary").innerHTML = `<span class="small">Press <strong>Project</strong> (top bar) to fill in model-projected winners and see the path to the title. Or use <strong>Predict mode</strong> to pick winners yourself.</span>`;
       return;
     }
     const final = byId.get("53452537");
@@ -1344,12 +1413,12 @@
       ? "(official)"
       : runProb !== null
         ? `~${pct(runProb)} to win it all along this path`
-        : `(final-match ELO edge ${escapeHtml(finalProb)})`;
+        : `(final-match model edge ${escapeHtml(finalProb)})`;
     document.getElementById("pathSummary").innerHTML = `
-      <strong>${champion?.name && userPicks.size ? "Your projected champion" : "Current ELO-projected champion"}:</strong> ${escapeHtml(champion?.name || "TBD")} ${escapeHtml(runLabel)}<br>
+      <strong>${champion?.name && userPicks.size ? "Your projected champion" : "Current model-projected champion"}:</strong> ${escapeHtml(champion?.name || "TBD")} ${escapeHtml(runLabel)}<br>
       <strong>Projected finalists:</strong> ${escapeHtml(leftSemi?.name || "TBD")} vs ${escapeHtml(rightSemi?.name || "TBD")}<br>
       <strong>Projected semifinalists:</strong> ${escapeHtml(topSeeds || "TBD")}<br>
-      <span class="small">Win-it-all % multiplies each round's ELO edge along the projected path (assumes the projected opponents). Updates with picks, results, and the upset slider.</span>`;
+      <span class="small">Win-it-all % multiplies each round's model edge along the projected path (assumes the projected opponents). Updates with picks, results, and the upset slider.</span>`;
   }
 
   // Live match minute for in-progress games, e.g. "63'", "45'+2'", or "HT" at the break.
@@ -1527,12 +1596,17 @@
       const va = getPayroll(teams[0]), vb = getPayroll(teams[1]);
       const valHtml = (Number.isFinite(va) && Number.isFinite(vb))
         ? `${escapeHtml(teams[0].abbr || teams[0].name)} ${escapeHtml(formatMoney(va))} · ${escapeHtml(teams[1].abbr || teams[1].name)} ${escapeHtml(formatMoney(vb))}` : "";
+      const mp = modelProbability(teams[0], teams[1]);
+      const modelHtml = mp
+        ? (() => { const i = mp.pA >= mp.pB ? 0 : 1; return `<strong>${escapeHtml(teams[i].name)} ${escapeHtml(pct(i === 0 ? mp.pA : mp.pB))}</strong> to advance`; })()
+        : `<span class="small">n/a</span>`;
       const news = espnNewsItems(m);
       const when = live
         ? `<span class="live-badge"><span class="live-pulse"></span>LIVE ${escapeHtml(liveClockLabel(m))}</span>`
         : escapeHtml(formatDate(m.kickoff, { tz: true }));
       return `<div class="ov-match" data-match-id="${escapeAttr(m.id)}" role="button" tabindex="0">
         <div class="ov-head"><strong>${escapeHtml(teams[0].name)} <span class="bc-vs">vs</span> ${escapeHtml(teams[1].name)}</strong><span class="small">${when} · ${escapeHtml(m.stage)}</span></div>
+        <div class="ov-line"><span class="ov-k">Model pick</span> ${modelHtml}</div>
         <div class="ov-line"><span class="ov-k">Odds to advance</span> ${oddsHtml}</div>
         ${valHtml ? `<div class="ov-line"><span class="ov-k">Squad value</span> ${valHtml}</div>` : ""}
         ${news ? `<div class="ov-line"><span class="ov-k">News</span> <span class="ov-news">${news}</span></div>` : ""}
@@ -1574,18 +1648,29 @@
   }
 
   function renderElo(m) {
-    if (!m.prediction) return `<div class="elo"><span class="small">No ELO pick yet; waiting for both projected teams.</span></div>`;
+    if (!m.prediction) return `<div class="elo"><span class="small">No model pick yet; waiting for both projected teams.</span></div>`;
     const p = m.prediction;
     const teams = p.teams;
     const width = Math.max(3, Math.min(97, Math.round(p.pWinner * 100)));
-    const ratingsText = `${teams[0].name} ${p.ra} · ${teams[1].name} ${p.rb}`;
-    const label = m.state === "post" ? "Pre-match pick" : m.userPicked ? "Your pick" : m.implied ? "Implied (forced by a later pick)" : (p.blended || p.payrollBlended) ? "Blended pick" : "ELO pick";
-    const blendNote = p.blended ? ` <span class="blend-tag">(ELO ${escapeHtml(pct(p.eloPWinner))} blended w/ market ${escapeHtml(pct(marketWeight))})</span>` : "";
-    const payNote = p.payrollBlended ? ` <span class="blend-tag">(+ squad value ${escapeHtml(pct(payrollWeight))} → ${escapeHtml(pct(p.payrollPWinner))})</span>` : "";
+    const ratingsText = `Elo ${teams[0].name} ${p.ra} · ${teams[1].name} ${p.rb}`;
+    const label = m.state === "post" ? "Pre-match pick" : m.userPicked ? "Your pick" : m.implied ? "Implied (forced by a later pick)" : (p.blended || p.payrollBlended) ? "Blended pick" : "Model pick";
+    const hostNote = p.host ? ` <span class="small">(incl. host edge)</span>` : "";
+    // Signals breakdown — show the classifier next to the value & market signals for the pick.
+    const signals = [`<span class="sig sig-model">Model ${escapeHtml(pct(p.modelPWinner))}</span>`];
+    if (Number.isFinite(p.payrollPWinner)) signals.push(`<span class="sig sig-val">Value ${escapeHtml(pct(p.payrollPWinner))}</span>`);
+    if (Number.isFinite(p.marketPWinner)) signals.push(`<span class="sig sig-mkt">Market ${escapeHtml(pct(p.marketPWinner))}</span>`);
+    const blendBits = [];
+    if (p.blended) blendBits.push(`market ${escapeHtml(pct(marketWeight))}`);
+    if (p.payrollBlended) blendBits.push(`value ${escapeHtml(pct(payrollWeight))}`);
+    const blendNote = blendBits.length ? ` <span class="blend-tag">(blended w/ ${blendBits.join(" + ")})</span>` : "";
+    const mx = MODEL.metrics;
     return `<div class="elo">
-      <strong>${escapeHtml(label)}:</strong> ${escapeHtml(p.winner.name)} ${escapeHtml(pct(p.pWinner))} <span class="small">ΔELO ${p.diff >= 0 ? "+" : ""}${escapeHtml(Math.round(p.diff))}</span>${blendNote}${payNote}<br>
-      <span class="small">${escapeHtml(ratingsText)}${p.external ? ` · ${escapeHtml(p.external)}` : ""}</span>
+      <strong>${escapeHtml(label)}:</strong> ${escapeHtml(p.winner.name)} ${escapeHtml(pct(p.pWinner))} to advance <span class="small">ΔElo ${p.diff >= 0 ? "+" : ""}${escapeHtml(Math.round(p.diff))}</span>${hostNote}${blendNote}<br>
+      <div class="signals">${signals.join("")}</div>
       <div class="probbar" title="${escapeAttr(p.winner.name)} ${pct(p.pWinner)}"><span style="width:${width}%"></span></div>
+      <span class="small">${escapeHtml(ratingsText)}</span><br>
+      <span class="small model-badge">🎯 Backtested ${escapeHtml(pct(mx.acc))} accuracy (${escapeHtml(pct(mx.wcAcc))} at World Cups), Brier ${escapeHtml(mx.brier.toFixed(2))} — ${mx.n.toLocaleString()} out-of-sample matches, 2023–26.</span>
+      ${p.external ? `<br><span class="small">${escapeHtml(p.external)}</span>` : ""}
     </div>`;
   }
 
@@ -1634,11 +1719,11 @@
     return parts.length ? `<div class="recent">${parts.join("")}</div>` : "";
   }
 
-  // ESPN news headlines for a match, if we've fetched its summary.
+  // Team-specific ESPN news headlines for a match, if we've fetched its summary.
   function espnNewsItems(m) {
-    const rd = recentData.get(m.id);
-    if (!rd || !rd.news || !rd.news.length) return "";
-    return rd.news.map(n => n.url
+    const items = newsForMatch(m, 4);
+    if (!items.length) return "";
+    return items.map(n => n.url
       ? `<a href="${escapeAttr(n.url)}" target="_blank" rel="noopener">${escapeHtml(n.headline)}</a>`
       : `<span>${escapeHtml(n.headline)}</span>`).join("");
   }
