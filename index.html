@@ -268,7 +268,7 @@
   <p class="byline">By <a href="mailto:willgray@gmail.com">W. Gray-Roncal</a></p>
   <div class="subhead">
     <span class="pill"><span class="dot" id="liveDot"></span><span id="liveLabel">Loading…</span></span>
-    <span class="pill">Auto-refresh: every 2 hours</span>
+    <span class="pill" title="Refreshes every minute while a match is live, otherwise every 2 hours">Auto-refresh: 1 min live · 2 h idle</span>
     <span class="pill" title="When live data was last successfully retrieved">Last updated: <span id="lastUpdated">—</span></span>
     <span class="pill">ELO predictions recompute after each result</span>
     <span class="pill">Times:
@@ -387,6 +387,8 @@
 <script>
 (() => {
   const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+  const LIVE_REFRESH_MS = 60 * 1000;          // poll every minute while a match is live
+  const SOON_REFRESH_MS = 5 * 60 * 1000;      // poll every 5 min when a kickoff is imminent
   const LOCAL_SCOREBOARD_URL = "scoreboard.json";
   const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260628-20260719&limit=250";
   const CUTOFF = "2021-06-29";
@@ -1039,6 +1041,21 @@
     recompute();
   }
 
+  let refreshTimer = null;
+  // Poll fast while a game is live (so the score @ minute stays current), slower otherwise.
+  function scheduleNextRefresh() {
+    clearTimeout(refreshTimer);
+    const now = Date.now();
+    const anyLive = matches.some(m => m.state === "in");
+    const kickoffSoon = matches.some(m => {
+      if (m.state === "post") return false;
+      const t = new Date(m.kickoff).getTime();
+      return t - now <= 10 * 60 * 1000 && t - now > -3 * 60 * 60 * 1000;   // within 10 min of kickoff
+    });
+    const delay = anyLive ? LIVE_REFRESH_MS : kickoffSoon ? SOON_REFRESH_MS : TWO_HOURS_MS;
+    refreshTimer = setTimeout(loadData, delay);
+  }
+
   async function loadData() {
     resetMatches();
     const liveLabel = document.getElementById("liveLabel");
@@ -1053,6 +1070,8 @@
     } catch (err) {
       computePredictions();
       render(`Using fallback snapshot — live refresh failed: ${err.message}`, true);
+    } finally {
+      scheduleNextRefresh();
     }
   }
 
@@ -1609,7 +1628,7 @@
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
-  resetMatches(); computePredictions(); render("Loading…"); loadData(); setInterval(loadData, TWO_HOURS_MS);
+  resetMatches(); computePredictions(); render("Loading…"); loadData();   // loadData self-schedules the next refresh (fast while live)
 })();
 </script>
 </body>
