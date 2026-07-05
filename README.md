@@ -7,12 +7,12 @@ A single-file, static GitHub Pages site for the World Cup 2026 knockout bracket:
 - four decision-tree quarters feeding semifinals, third-place playoff, and final
 - live match state pulled from ESPN's public scoreboard feed (with a committed JSON cache as a first source)
 - scheduled labels for all future/unplayed matches
-- ELO-based predictions for unresolved games, recomputed after each result
+- a **backtested win-probability classifier** (logistic on Elo + host advantage) as the base prediction, validated out-of-sample on 2014–26 internationals (78% accuracy, 83% at World Cups)
 - **Predict mode** — click teams to advance your own picks and a slider to tune how many upsets the model expects
 - **Recent-data layer** — pulls live betting odds, cards, and news from ESPN and blends the market into each prediction
 - **Squad value** — each team's total Transfermarkt market value shown on every card, with an optional layer that folds it into the prediction
-- **Coming up** — a header popup with the remaining teams ranked by squad value, plus the next matches with open betting odds, squad values, and recent news
-- match popups pull the ESPN preview/news, odds, and cards on demand (no toggle needed)
+- **Coming up** — a header popup with the remaining teams ranked by squad value, plus the next matches with the model pick, open betting odds, squad values, and recent news
+- match popups pull the ESPN preview/news, odds, and cards on demand (no toggle needed), with news filtered to the two teams in question
 - centered on the **Round of 16** (the completed Round of 32 columns are hidden; their results still feed the R16 cards)
 - recent head-to-head notes where embedded lookups exist
 - browser auto-refresh every 2 hours
@@ -83,6 +83,17 @@ Match popups also pull ESPN's preview/news, betting odds, and cards on demand wh
 
 Pushing to `main` republishes the site automatically.
 
-## Prediction model notes
+## Prediction model (backtested classifier)
 
-Each unresolved match uses an embedded ELO table and the logistic transform `1 / (1 + 10^(-ΔELO / (400 × upsetFactor)))`. On its own it ignores injuries, rest, travel, home advantage, styles, and penalty-specific skill except as already reflected in the rating — the recent-data layer is how live market/news context gets folded in. With that layer on, the displayed probability is `(1 − w)·ELO + w·market`, where `w` is the Market-weight slider. The ELO layer is independent of official match state, and official winners always override predictions.
+Each unresolved match's "to advance" probability comes from a logistic classifier:
+
+```
+P(win) = sigmoid( 0.64 · (ΔElo / 100) + 0.25 · host )
+```
+
+- **Trained/validated** on 9,403 decisive international matches from 2014 to 2026 (World Cups, continental cups, qualifiers, friendlies), sourced from the [martj42 international results dataset](https://github.com/martj42/international_results). Drawn knockouts are resolved by their penalty result.
+- **Elo** is computed from the full international match history (World-Football-Elo style, with margin-of-victory and home advantage). `host` gives the 2026 co-hosts (USA, Canada, Mexico) a home edge worth ≈39 Elo.
+- **Out-of-sample performance** (2023–26 holdout, 2,912 matches): **78% accuracy, Brier 0.149, log-loss 0.453**. On World Cup matches alone: **83% accuracy, Brier 0.124**. Recent form and goal-difference features were tested and dropped — they didn't improve out-of-sample log-loss.
+- The **Upset slider** flattens the curve (divides the logit). Official winners always override predictions.
+
+The classifier is the base pick. The **Squad value** and **Recent data** layers fold their own "to advance" estimates in on top via the weight sliders (`(1 − w)·base + w·signal`), and the match popup shows all three signals — model, value, market — side by side. These blend layers are heuristic (not part of the historical backtest); the backtested figures above describe the Elo classifier alone.

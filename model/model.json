@@ -1,0 +1,51 @@
+{
+ "B": 0.636,
+ "C": 0.2476,
+ "test": {
+  "n": 2912,
+  "acc": 0.7802,
+  "brier": 0.1489,
+  "logloss": 0.4532
+ },
+ "wc": {
+  "n": 70,
+  "acc": 0.8286,
+  "brier": 0.1244,
+  "logloss": 0.4003
+ },
+ "decisiveMatches": 9403,
+ "ratings": {
+  "argentina": 2220,
+  "spain": 2224,
+  "france": 2207,
+  "england": 2119,
+  "colombia": 2088,
+  "brazil": 2112,
+  "portugal": 2084,
+  "belgium": 1976,
+  "netherlands": 2049,
+  "germany": 1992,
+  "morocco": 2064,
+  "japan": 1976,
+  "switzerland": 2013,
+  "croatia": 1949,
+  "ecuador": 1956,
+  "norway": 2012,
+  "senegal": 1874,
+  "algeria": 1853,
+  "austria": 1886,
+  "paraguay": 1895,
+  "mexico": 2059,
+  "united states": 1922,
+  "australia": 1906,
+  "egypt": 1860,
+  "canada": 1853,
+  "ivory coast": 1844,
+  "dr congo": 1807,
+  "sweden": 1804,
+  "south africa": 1699,
+  "cape verde": 1694,
+  "ghana": 1680,
+  "bosnia and herzegovina": 1680
+ }
+}
