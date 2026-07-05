@@ -226,7 +226,8 @@
     .sig-mkt { color: var(--accent2); border-color: rgba(158,233,255,.4); background: rgba(158,233,255,.08); }
     .model-badge { color: #bfe9c9; }
     #titleOdds { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 8px 12px; }
-    .to-head, .to-row { display: grid; grid-template-columns: 22px minmax(0,1fr) 90px 46px 66px 62px; align-items: center; gap: 8px; }
+    .to-head, .to-row { display: grid; grid-template-columns: 22px minmax(0,1fr) 84px 44px 72px 60px; align-items: center; gap: 8px; }
+    .to-head span { line-height: 1.15; }
     .to-head { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 4px 0 6px; border-bottom: 1px solid rgba(255,255,255,.08); }
     .to-row { padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
     .to-row:last-child { border-bottom: 0; }
@@ -239,8 +240,8 @@
     .to-final { text-align: right; color: var(--muted); }
     .to-val { text-align: right; color: var(--good); }
     @media (max-width: 560px) {
-      .to-head, .to-row { grid-template-columns: 20px minmax(0,1fr) 44px 58px; }
-      .to-bar, .to-head .to-bar { display: none; }
+      .to-head, .to-row { grid-template-columns: 20px minmax(0,1fr) 44px 64px; }
+      .to-bar, .to-val { display: none; }
     }
     .probbar { margin-top: 6px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
     .probbar > span { display: block; height: 100%; width: 50%; background: linear-gradient(90deg, var(--pred), var(--accent2)); border-radius: 999px; }
@@ -404,7 +405,7 @@
   <section id="titleSection">
     <div class="section-inner">
       <h2>Who wins it all — model title odds</h2>
-      <p class="small" style="margin:-6px 0 12px;">Every remaining team ranked by the backtested model's probability of winning the tournament (simulating each remaining round). Updates with results and the upset slider.</p>
+      <p class="small" style="margin:-6px 0 12px;">Every remaining team ranked by the backtested model's probability of winning the tournament (simulating each remaining round). <strong>Title</strong> = win it all — sums to 100% (one champion). <strong>Reach final</strong> = make the final — sums to ~200% (two teams get there). Updates with results and the upset slider.</p>
       <div id="titleOdds"></div>
     </div>
   </section>
@@ -1372,7 +1373,10 @@
               <span class="bp-bio">${escapeHtml(p.bio)}</span>
               <span class="bp-fun">⚡ ${escapeHtml(p.fun)}</span></li>`).join("")}</ul>`
       : settled
-        ? `<p class="bc-line">${synthesizePreview(m, teams).slice(0, 3).join(" ") || "Preview builds once ratings load."}</p>`
+        ? `<p class="bc-line">${synthesizePreview(m, teams).slice(0, 3).join(" ") || "Preview builds once ratings load."}</p>${(() => {
+            const kp = [keyPlayersFor(teams[0].name)[0], keyPlayersFor(teams[1].name)[0]].filter(Boolean);
+            return kp.length ? `<p class="bc-line"><strong>Key players.</strong> ${kp.map(p => `${escapeHtml(p.name)} (${escapeHtml(p.team)})`).join(", ")}</p>` : "";
+          })()}`
         : `<p class="bc-line small">A preview will appear once both teams are confirmed.</p>`;
     return `<article class="brief-card" data-match-id="${escapeAttr(m.id)}" role="button" tabindex="0">
       <div class="bc-head">
@@ -1503,12 +1507,12 @@
         <span class="to-rank">${i + 1}</span>
         <span class="to-team">${escapeHtml(t.name)}${isHost({ name: t.name }) ? ` <span class="to-host" title="2026 co-host — home edge">🏠</span>` : ""}</span>
         <span class="to-bar"><span style="width:${w}%"></span></span>
-        <span class="to-win" title="Win the tournament">${escapeHtml(showPct(t.p))}</span>
-        <span class="to-final small" title="Reach the final">${escapeHtml(showPct(finalP))} final</span>
+        <span class="to-win" title="Chance to win the tournament">${escapeHtml(showPct(t.p))}</span>
+        <span class="to-final small" title="Chance to reach the final">${escapeHtml(showPct(finalP))}</span>
         <span class="to-val small">${val ? escapeHtml(formatMoney(val)) : ""}</span>
       </div>`;
     }).join("");
-    el.innerHTML = `<div class="to-head"><span class="to-rank">#</span><span class="to-team">Team</span><span class="to-bar"></span><span class="to-win">Title</span><span class="to-final small">Final</span><span class="to-val small">Value</span></div>${body}`;
+    el.innerHTML = `<div class="to-head"><span class="to-rank">#</span><span class="to-team">Team</span><span class="to-bar"></span><span class="to-win" title="Win the tournament">Title</span><span class="to-final small" title="Reach the final">Reach final</span><span class="to-val small">Value</span></div>${body}`;
   }
 
   function renderGame(m) {
@@ -1550,6 +1554,24 @@
   }
 
   // AI preview card: why it's exciting, things to watch, two key players per team.
+  // Key players per nation, harvested once from the hand-written R32 briefs (which cover every
+  // team) so generated previews for later rounds can still name each side's stars.
+  let _teamPlayers = null;
+  function keyPlayersFor(name) {
+    if (!_teamPlayers) {
+      _teamPlayers = new Map();
+      for (const b of Object.values(MATCH_BRIEFS)) {
+        for (const p of (b.players || [])) {
+          const k = norm(p.team);
+          if (!_teamPlayers.has(k)) _teamPlayers.set(k, []);
+          const arr = _teamPlayers.get(k);
+          if (!arr.some(x => x.name === p.name)) arr.push(p);
+        }
+      }
+    }
+    return _teamPlayers.get(norm(name)) || [];
+  }
+
   // Data-driven preview for any settled matchup (used where there's no hand-written brief — i.e.
   // the current R16, quarterfinals, and beyond). Returns an array of HTML-safe sentences built
   // from the model, Elo, host status, squad value, betting market and head-to-head.
@@ -1611,10 +1633,20 @@
       }
       const sentences = synthesizePreview(m, teams);
       const news = espnNewsItems(m);
+      const kp = [...keyPlayersFor(teams[0].name).slice(0, 2), ...keyPlayersFor(teams[1].name).slice(0, 2)];
+      const playersHtml = kp.length ? `<h4>Key players</h4>
+        <div class="brief-players">${kp.map(p => `
+          <div class="brief-player">
+            <div class="bp-head"><span class="bp-name">${escapeHtml(p.name)}</span><span class="bp-team">${escapeHtml(p.team)}</span></div>
+            <div class="bp-role">${escapeHtml(p.role)}</div>
+            <div class="bp-bio">${escapeHtml(p.bio)}</div>
+            <div class="bp-fun"><span>⚡</span> ${escapeHtml(p.fun)}</div>
+          </div>`).join("")}</div>` : "";
       return `<div class="brief">
         <div class="brief-tag">Model preview</div>
         <h4>${escapeHtml(teams[0].name)} vs ${escapeHtml(teams[1].name)}</h4>
         ${sentences.length ? `<p>${sentences.join(" ")}</p>` : `<p class="small">Preview builds once ratings and odds load.</p>`}
+        ${playersHtml}
         ${news ? `<h4>Latest team news</h4><div class="news">${news}</div>` : ""}
       </div>`;
     }
