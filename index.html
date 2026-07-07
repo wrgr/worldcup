@@ -347,6 +347,7 @@
       </select>
     <button id="refreshBtn" type="button">Refresh now</button>
     <button id="projectBtn" type="button" class="secondary">Project: off</button>
+    <button id="fullBracketBtn" type="button" class="secondary">Full bracket: off</button>
     <button id="predictBtn" type="button" class="secondary">Predict mode: off</button>
     <button id="recentBtn" type="button" class="secondary">Recent data: off</button>
     <button id="payrollBtn" type="button" class="secondary">Squad value: off</button>
@@ -762,6 +763,7 @@
   let lastUpdated = null;            // Date of last successful live retrieval
   let lastUpdatedSource = null;      // which source supplied it
   let projectOn = false;             // show ELO-projected winners (off by default)
+  let fullBracket = false;           // false = quarterfinals onward (default); true = whole bracket
   let recentDataOn = false;          // "incorporate recent data" layer toggle
   let marketWeight = 0.5;            // blend weight: 0 = pure ELO, 1 = pure market
   let signalBlend = 0.5;             // master: how much the value/market signals pull the model pick
@@ -1439,16 +1441,20 @@
       `${renderG(L.final)}` +
       `<div class="third"><h4>Third place</h4>${renderG(L.third)}</div>` +
       `</div></div>`;
-    // The tournament is now in the Round of 16, so the bracket centers on that round and the
-    // completed Round of 32 columns are hidden (their results still feed the R16 cards).
+    // The Round of 32 and Round of 16 are complete, so by default the bracket centers on the
+    // quarterfinals onward. "Full bracket" reveals the completed earlier rounds on both wings.
+    const left = fullBracket
+      ? quadColumn("Round of 32", L.leftR32) + quadColumn("Round of 16", L.leftR16) + quadColumn("Quarterfinal", L.leftQF)
+      : quadColumn("Quarterfinal", L.leftQF);
+    const right = fullBracket
+      ? quadColumn("Quarterfinal", L.rightQF) + quadColumn("Round of 16", L.rightR16) + quadColumn("Round of 32", L.rightR32)
+      : quadColumn("Quarterfinal", L.rightQF);
     document.getElementById("bracket").innerHTML =
-      quadColumn("Round of 16", L.leftR16) +
-      quadColumn("Quarterfinal", L.leftQF) +
+      left +
       soloColumn("Semifinal", L.leftSF[0]) +
       center +
       soloColumn("Semifinal", L.rightSF[0]) +
-      quadColumn("Quarterfinal", L.rightQF) +
-      quadColumn("Round of 16", L.rightR16);
+      right;
   }
 
   function championRunProbability(championName) {
@@ -1964,6 +1970,14 @@
     recompute();
   }
 
+  function setFullBracket(on) {
+    fullBracket = on;
+    const btn = document.getElementById("fullBracketBtn");
+    btn.textContent = `Full bracket: ${on ? "on" : "off"}`;
+    btn.classList.toggle("toggle-on", on);
+    renderBracket(); fitBracket();
+  }
+
   function setPredictMode(on) {
     predictMode = on;
     document.body.classList.toggle("predict-on", on);
@@ -2016,6 +2030,7 @@
 
   document.getElementById("refreshBtn").addEventListener("click", loadData);
   document.getElementById("projectBtn").addEventListener("click", () => setProject(!projectOn));
+  document.getElementById("fullBracketBtn").addEventListener("click", () => setFullBracket(!fullBracket));
   document.getElementById("predictBtn").addEventListener("click", () => setPredictMode(!predictMode));
   document.getElementById("recentBtn").addEventListener("click", () => setRecentMode(!recentDataOn));
   document.getElementById("payrollBtn").addEventListener("click", () => setPayrollMode(!payrollOn));

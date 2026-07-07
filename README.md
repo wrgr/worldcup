@@ -16,7 +16,7 @@ A single-file, static GitHub Pages site for the World Cup 2026 knockout bracket:
 - **model-generated match previews** for every current/upcoming tie (R16, quarterfinals, …) built from the model pick, Elo edge, host advantage, squad value, betting market, head-to-head, and each side's **key players** — with hand-written editorial previews used where they exist
 - **Coming up** — a header popup with the remaining teams ranked by squad value, plus the next matches with the model pick, open betting odds, squad values, and recent news
 - match popups pull the ESPN preview/news, odds, and cards on demand (no toggle needed), with news filtered to the two teams in question
-- centered on the **Round of 16** (the completed Round of 32 columns are hidden; their results still feed the R16 cards)
+- centered on the **quarterfinals onward** by default now that the Round of 32 and Round of 16 are complete; a **Full bracket** toggle reveals the earlier rounds (their results still feed the later cards)
 - recent head-to-head notes where embedded lookups exist
 - browser auto-refresh every 2 hours
 
